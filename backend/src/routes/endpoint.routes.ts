@@ -23,7 +23,8 @@ endpointRouter.get(
 endpointRouter.get(
   "/:id/status-codes",
   asyncHandler(async (req, res) => {
-    const distribution = await endpointDetailService.getStatusCodeDistribution(Number(req.params.id));
+    const hours = req.query.hours ? Number(req.query.hours) : undefined;
+    const distribution = await endpointDetailService.getStatusCodeDistribution(Number(req.params.id), hours);
     res.json(distribution);
   })
 );
