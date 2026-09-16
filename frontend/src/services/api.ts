@@ -8,6 +8,7 @@ import type {
   EndpointHealth,
   EndpointTrendPoint,
   EndpointWithStats,
+  MonthlyReport,
   StatusCodeCount,
   TrendPoint,
   WeeklyReport,
@@ -24,8 +25,10 @@ export const endpointsApi = {
   remove: (id: number) => api.delete(`/endpoints/${id}`),
   trends: (id: number, hours = 24) =>
     api.get<EndpointTrendPoint[]>(`/endpoints/${id}/trends`, { params: { hours } }).then((r) => r.data),
-  statusCodes: (id: number) =>
-    api.get<StatusCodeCount[]>(`/endpoints/${id}/status-codes`).then((r) => r.data),
+  statusCodes: (id: number, hours = 24) =>
+    api.get<StatusCodeCount[]>(`/endpoints/${id}/status-codes`, { params: { hours } }).then((r) => r.data),
+  runCheck: (id: number) => api.post(`/endpoints/${id}/check`).then((r) => r.data),
+  runAllChecks: () => api.post("/endpoints/check-all").then((r) => r.data),
 };
 
 export const monitorApi = {
@@ -42,6 +45,7 @@ export const dashboardApi = {
 export const reportsApi = {
   daily: (date?: string) => api.get<DailyReport>("/reports/daily", { params: { date } }).then((r) => r.data),
   weekly: () => api.get<WeeklyReport>("/reports/weekly").then((r) => r.data),
+  monthly: () => api.get<MonthlyReport>("/reports/monthly").then((r) => r.data),
 };
 
 export const importApi = {

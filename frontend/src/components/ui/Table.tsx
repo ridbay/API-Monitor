@@ -24,6 +24,18 @@ export function Tbody({ children }: { children: ReactNode }) {
   return <tbody className="divide-y divide-[var(--color-border)] bg-[var(--color-surface)]">{children}</tbody>;
 }
 
-export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <td className={`px-4 py-3 text-[var(--color-text-muted)] ${className}`}>{children}</td>;
+export function Td({
+  children,
+  className = "",
+  title,
+}: {
+  children: ReactNode;
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <td className={`px-4 py-3 text-[var(--color-text-muted)] ${className}`} title={title}>
+      {children}
+    </td>
+  );
 }

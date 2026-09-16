@@ -6,3 +6,4 @@ export const reportRouter = Router();
 
 reportRouter.get("/daily", asyncHandler(reportController.daily));
 reportRouter.get("/weekly", asyncHandler(reportController.weekly));
+reportRouter.get("/monthly", asyncHandler(reportController.monthly));

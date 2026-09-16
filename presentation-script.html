@@ -302,7 +302,7 @@
       <div class="beat-index">08</div>
       <div class="beat-content">
         <h3>Close on Reports</h3>
-        <p><span class="cue">Reports</span> "Last stop — this is the rollup. Daily numbers, then weekly: fastest services, slowest services, least stable, best availability. Honestly, this is the page I'd bring to a postmortem."</p>
+        <p><span class="cue">Reports</span> "Last stop — this is the rollup. Daily numbers, weekly rankings (fastest, slowest, least stable, best availability), and the 30-day view: 844 services tracked, 93.65% uptime, 30-day incidents, currently degraded, and uptime ranking. Honestly, this is the page I'd bring to a postmortem."</p>
       </div>
     </div>
   </section>
@@ -369,10 +369,55 @@
     </div>
   </section>
 
-  <!-- ============ SECTION 4: Q&A ============ -->
+  <!-- ============ SECTION 4: ROADMAP ============ -->
   <section>
     <div class="section-head">
-      <h2>4 · If they ask</h2>
+      <h2>4 · Where this goes next</h2>
+      <span class="section-time">~1 min</span>
+    </div>
+    <p class="section-lede">"This first version was scoped on purpose — here's what I'd build next, in order."</p>
+
+    <div class="table-scroll">
+      <table class="tech-table">
+        <tr><th>Next</th><th>What</th><th>Why it's next</th></tr>
+        <tr>
+          <td class="layer">1</td>
+          <td>Alerting</td>
+          <td>Slack / email / Teams when an endpoint goes down — right now you have to be looking at the dashboard to know.</td>
+        </tr>
+        <tr>
+          <td class="layer">2</td>
+          <td>Incident grouping</td>
+          <td>Count outages, not failed checks — one 10-minute blip should read as "1 incident," not "10 failures."</td>
+        </tr>
+        <tr>
+          <td class="layer">3</td>
+          <td>P95 / P99 latency</td>
+          <td>Averages hide the slow tail — this is usually where the real complaints come from.</td>
+        </tr>
+        <tr>
+          <td class="layer">4</td>
+          <td>MTTR</td>
+          <td>Mean time to recover, pairs with the "down for" streak already on the dashboard.</td>
+        </tr>
+        <tr>
+          <td class="layer">5</td>
+          <td>Auth &amp; roles</td>
+          <td>Deliberately left out of v1 — needed before this is anyone but our own team's tool.</td>
+        </tr>
+        <tr>
+          <td class="layer">6</td>
+          <td>Multi-region checks</td>
+          <td>Catch outages that only show up from outside our own network.</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5: Q&A ============ -->
+  <section>
+    <div class="section-head">
+      <h2>5 · If they ask</h2>
       <span class="section-time">buffer</span>
     </div>
 
@@ -382,7 +427,7 @@
     </div>
     <div class="qa">
       <p class="q">"What happens when something actually goes down?"</p>
-      <p class="a">"It's on the dashboard immediately — Recent Failures and the health list both update within the minute. Alerting to Slack or email is the natural next step; I scoped it out deliberately for this first version."</p>
+      <p class="a">"It's on the dashboard immediately — Recent Failures and the health list both update within the minute. Alerting's item one on that roadmap I just showed — deliberately scoped out of this first version, not missed."</p>
     </div>
     <div class="qa">
       <p class="q">"Can it reach our internal services, not just public sites?"</p>

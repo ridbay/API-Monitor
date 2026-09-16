@@ -20,3 +20,7 @@ export function useDailyReport(date?: string) {
 export function useWeeklyReport() {
   return useQuery({ queryKey: ["reports", "weekly"], queryFn: reportsApi.weekly });
 }
+
+export function useMonthlyReport() {
+  return useQuery({ queryKey: ["reports", "monthly"], queryFn: reportsApi.monthly });
+}

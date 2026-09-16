@@ -12,4 +12,9 @@ export const reportController = {
     const report = await reportService.getWeekly();
     res.json(report);
   },
+
+  async monthly(_req: Request, res: Response) {
+    const report = await reportService.getMonthly();
+    res.json(report);
+  },
 };

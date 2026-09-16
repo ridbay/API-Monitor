@@ -71,12 +71,22 @@ export interface StatusCodeCount {
   count: number;
 }
 
+export interface OutageItem {
+  id: number;
+  endpoint_id: number;
+  endpoint_name: string;
+  status_code: number | null;
+  error_message: string | null;
+  created_at: string;
+}
+
 export interface DailyReport {
   date: string;
   availability: number;
   avg_response_time: number;
   total_checks: number;
   failures: number;
+  outages?: OutageItem[];
 }
 
 export interface WeeklyReport {
@@ -85,6 +95,14 @@ export interface WeeklyReport {
   top_slowest_apis?: Array<{ endpoint_id: number; name: string; avg_response_time: number }>;
   most_unstable_apis: Array<{ endpoint_id: number; name: string; success_rate: number }>;
   best_availability: Array<{ endpoint_id: number; name: string; availability: number }>;
+}
+
+export interface MonthlyReport {
+  services_tracked: number;
+  avg_uptime: number;
+  incidents: number;
+  currently_degraded: number;
+  uptime_ranking: Array<{ endpoint_id: number; name: string; uptime: number }>;
 }
 
 export interface CsvPreviewRow {
