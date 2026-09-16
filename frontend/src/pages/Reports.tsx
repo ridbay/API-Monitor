@@ -16,17 +16,19 @@ function RankedList({
   items,
   valueKey,
   valueSuffix = "",
+  emptyMessage = "No data yet",
 }: {
   title: string;
   items: Array<{ endpoint_id: number; name: string } & Record<string, unknown>>;
   valueKey: string;
   valueSuffix?: string;
+  emptyMessage?: string;
 }) {
   return (
     <Card>
       <h3 className="mb-3 text-sm font-semibold text-[var(--color-text)]">{title}</h3>
       {items.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-faint)]">No data yet</p>
+        <p className="text-sm text-[var(--color-text-faint)]">{emptyMessage}</p>
       ) : (
         <Table>
           <Thead>
@@ -56,6 +58,13 @@ export function Reports() {
   const { data: daily, isLoading: dailyLoading } = useDailyReport();
   const { data: weekly, isLoading: weeklyLoading } = useWeeklyReport();
 
+  const unstableApis = (weekly?.most_unstable_apis ?? []).filter(
+    (item) => Number(item.success_rate) < 100
+  );
+  const bestAvailabilityApis = (weekly?.best_availability ?? []).filter(
+    (item) => Number(item.availability) > 80
+  );
+
   return (
     <div className="space-y-8">
       <div>
@@ -84,10 +93,28 @@ export function Reports() {
         {weeklyLoading || !weekly ? (
           <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <RankedList title="Top Fast APIs" items={weekly.top_fast_apis} valueKey="avg_response_time" valueSuffix=" ms" />
-            <RankedList title="Most Unstable APIs" items={weekly.most_unstable_apis} valueKey="success_rate" valueSuffix="%" />
-            <RankedList title="Best Availability" items={weekly.best_availability} valueKey="availability" valueSuffix="%" />
+            <RankedList
+              title="Top Slowest APIs"
+              items={weekly.top_slow_apis ?? weekly.top_slowest_apis ?? []}
+              valueKey="avg_response_time"
+              valueSuffix=" ms"
+            />
+            <RankedList
+              title="Most Unstable APIs"
+              items={unstableApis}
+              valueKey="success_rate"
+              valueSuffix="%"
+              emptyMessage={weekly.top_fast_apis.length > 0 ? "No unstable APIs" : "No data yet"}
+            />
+            <RankedList
+              title="Best Availability"
+              items={bestAvailabilityApis}
+              valueKey="availability"
+              valueSuffix="%"
+              emptyMessage={weekly.top_fast_apis.length > 0 ? "No APIs above 80%" : "No data yet"}
+            />
           </div>
         )}
       </section>

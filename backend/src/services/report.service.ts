@@ -53,6 +53,18 @@ export const reportService = {
       [since]
     );
 
+    const { rows: slowest } = await pool.query(
+      `SELECT e.id AS endpoint_id, e.name, AVG(mr.response_time) FILTER (WHERE mr.status = 'up')::int AS avg_response_time
+       FROM monitoring_results mr
+       JOIN endpoints e ON e.id = mr.endpoint_id
+       WHERE mr.created_at >= $1 AND e.deleted_at IS NULL
+       GROUP BY e.id, e.name
+       HAVING COUNT(*) FILTER (WHERE mr.status = 'up') > 0
+       ORDER BY avg_response_time DESC
+       LIMIT 5`,
+      [since]
+    );
+
     const { rows: unstable } = await pool.query(
       `SELECT e.id AS endpoint_id, e.name,
          ROUND(100.0 * COUNT(*) FILTER (WHERE mr.status = 'up') / COUNT(*), 2) AS success_rate
@@ -60,6 +72,7 @@ export const reportService = {
        JOIN endpoints e ON e.id = mr.endpoint_id
        WHERE mr.created_at >= $1 AND e.deleted_at IS NULL
        GROUP BY e.id, e.name
+       HAVING ROUND(100.0 * COUNT(*) FILTER (WHERE mr.status = 'up') / COUNT(*), 2) < 100
        ORDER BY success_rate ASC
        LIMIT 5`,
       [since]
@@ -72,6 +85,7 @@ export const reportService = {
        JOIN endpoints e ON e.id = mr.endpoint_id
        WHERE mr.created_at >= $1 AND e.deleted_at IS NULL
        GROUP BY e.id, e.name
+       HAVING ROUND(100.0 * COUNT(*) FILTER (WHERE mr.status = 'up') / COUNT(*), 2) > 80
        ORDER BY availability DESC
        LIMIT 5`,
       [since]
@@ -79,6 +93,8 @@ export const reportService = {
 
     return {
       top_fast_apis: fastest,
+      top_slow_apis: slowest,
+      top_slowest_apis: slowest,
       most_unstable_apis: unstable,
       best_availability: bestAvailability,
     };

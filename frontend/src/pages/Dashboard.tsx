@@ -5,9 +5,11 @@ import { Card } from "../components/ui/Card";
 import { ChartContainer } from "../components/ui/ChartContainer";
 import { Table, Tbody, Td, Th, Thead } from "../components/ui/Table";
 import { Button } from "../components/ui/Button";
-import { useDashboardSummary } from "../hooks/useDashboard";
+import { useDashboardSummary, useEndpointHealth } from "../hooks/useDashboard";
 import { useRunAllChecks } from "../hooks/useEndpoints";
 import { chartTooltipProps, CHART_COLORS } from "../lib/chartTheme";
+import { formatDuration } from "../lib/duration";
+import type { EndpointHealth } from "../types";
 
 const COLORS = { Healthy: CHART_COLORS.success, Warning: CHART_COLORS.warning, Down: CHART_COLORS.failure };
 
@@ -40,6 +42,87 @@ function SummaryCard({
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${TONE_CLASSES[tone]}`}>
         <Icon className="h-4.5 w-4.5" strokeWidth={2} />
       </div>
+    </Card>
+  );
+}
+
+function healthTone(entry: EndpointHealth): "success" | "warning" | "failure" | "neutral" {
+  if (entry.status === "down") return "failure";
+  if (entry.status === "unknown") return "neutral";
+  return entry.availability < 98 ? "warning" : "success";
+}
+
+const BAR_TONE_CLASSES: Record<string, string> = {
+  success: "bg-success-500",
+  warning: "bg-warning-500",
+  failure: "bg-failure-500",
+  neutral: "bg-[var(--color-text-faint)]",
+};
+
+const DOT_TONE_CLASSES: Record<string, string> = {
+  success: "bg-success-400",
+  warning: "bg-warning-400",
+  failure: "bg-failure-400",
+  neutral: "bg-[var(--color-text-faint)]",
+};
+
+function EndpointHealthRow({ entry }: { entry: EndpointHealth }) {
+  const tone = healthTone(entry);
+  const durationLabel = entry.status === "down" ? "Down for" : entry.status === "up" ? "Up for" : "";
+
+  return (
+    <div className="flex items-center gap-4 py-2.5">
+      <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_TONE_CLASSES[tone]}`} />
+      <Link
+        to={`/endpoints/${entry.endpoint_id}`}
+        className="w-40 shrink-0 truncate text-sm font-medium text-[var(--color-text)] hover:text-brand-300 hover:underline"
+      >
+        {entry.name}
+      </Link>
+      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+        <div
+          className={`h-full rounded-full ${BAR_TONE_CLASSES[tone]}`}
+          style={{ width: `${Math.min(100, Math.max(entry.availability, 2))}%` }}
+        />
+      </div>
+      <span className="w-16 shrink-0 text-right text-sm tabular-nums text-[var(--color-text-muted)]">
+        {entry.availability.toFixed(1)}%
+      </span>
+      <span className="w-32 shrink-0 text-right text-xs text-[var(--color-text-faint)]">
+        {durationLabel} {formatDuration(entry.status_since)}
+      </span>
+    </div>
+  );
+}
+
+const STATUS_SORT_ORDER: Record<string, number> = { down: 0, unknown: 1, up: 2 };
+
+function EndpointHealthList() {
+  const { data: health, isLoading } = useEndpointHealth();
+
+  const sorted = [...(health ?? [])].sort((a, b) => {
+    const statusDiff = STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
+    if (statusDiff !== 0) return statusDiff;
+    return a.availability - b.availability;
+  });
+
+  return (
+    <Card>
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[var(--color-text)]">Endpoint Health</h3>
+        <span className="text-xs text-[var(--color-text-faint)]">Success rate &amp; current streak</span>
+      </div>
+      {isLoading ? (
+        <p className="py-6 text-sm text-[var(--color-text-muted)]">Loading…</p>
+      ) : sorted.length === 0 ? (
+        <p className="py-6 text-center text-sm text-[var(--color-text-faint)]">No endpoints yet</p>
+      ) : (
+        <div className="divide-y divide-[var(--color-border)]">
+          {sorted.map((entry) => (
+            <EndpointHealthRow key={entry.endpoint_id} entry={entry} />
+          ))}
+        </div>
+      )}
     </Card>
   );
 }
@@ -160,6 +243,8 @@ export function Dashboard() {
               )}
             </Card>
           </div>
+
+          <EndpointHealthList />
         </>
       )}
     </div>

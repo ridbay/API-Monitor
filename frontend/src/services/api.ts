@@ -5,6 +5,7 @@ import type {
   DailyReport,
   DashboardSummary,
   DiscoveredEndpoint,
+  EndpointHealth,
   EndpointTrendPoint,
   EndpointWithStats,
   StatusCodeCount,
@@ -35,6 +36,7 @@ export const monitorApi = {
 export const dashboardApi = {
   summary: () => api.get<DashboardSummary>("/dashboard/summary").then((r) => r.data),
   trends: (hours = 24) => api.get<TrendPoint[]>("/dashboard/trends", { params: { hours } }).then((r) => r.data),
+  endpointHealth: () => api.get<EndpointHealth[]>("/dashboard/endpoint-health").then((r) => r.data),
 };
 
 export const reportsApi = {

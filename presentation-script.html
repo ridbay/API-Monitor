@@ -1,0 +1,395 @@
+<!doctype html>
+<title>API Monitor Walkthrough</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f7f7fb;
+    --surface: #ffffff;
+    --surface-2: #f0f0f7;
+    --border: #e1e1ec;
+    --border-strong: #cbccdd;
+    --text: #14141f;
+    --text-muted: #55566b;
+    --text-faint: #8888a0;
+    --brand-300: #8b8ff5;
+    --brand-500: #6366f1;
+    --brand-600: #4f46e5;
+    --brand-tint: #eeeefd;
+    --warning: #b7791f;
+    --warning-tint: #fdf3df;
+    --cue-bg: #eeeefd;
+    --cue-text: #4f46e5;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0e17;
+      --surface: #10141f;
+      --surface-2: #151a28;
+      --border: #212739;
+      --border-strong: #2d3548;
+      --text: #eef0f5;
+      --text-muted: #9199ae;
+      --text-faint: #5c6478;
+      --brand-300: #a5b0fc;
+      --brand-500: #818cf8;
+      --brand-600: #6366f1;
+      --brand-tint: rgba(99, 102, 241, 0.14);
+      --warning: #fbbf24;
+      --warning-tint: rgba(251, 191, 36, 0.12);
+      --cue-bg: rgba(99, 102, 241, 0.16);
+      --cue-text: #a5b0fc;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0e17;
+    --surface: #10141f;
+    --surface-2: #151a28;
+    --border: #212739;
+    --border-strong: #2d3548;
+    --text: #eef0f5;
+    --text-muted: #9199ae;
+    --text-faint: #5c6478;
+    --brand-300: #a5b0fc;
+    --brand-500: #818cf8;
+    --brand-600: #6366f1;
+    --brand-tint: rgba(99, 102, 241, 0.14);
+    --warning: #fbbf24;
+    --warning-tint: rgba(251, 191, 36, 0.12);
+    --cue-bg: rgba(99, 102, 241, 0.16);
+    --cue-text: #a5b0fc;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.6;
+    padding-inline: 20px;
+    padding-block: 28px;
+  }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  /* ---- Header ---- */
+  .kicker {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--brand-500); margin-bottom: 10px;
+  }
+  .kicker::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-tint);
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 38px); font-weight: 800; letter-spacing: -0.02em;
+    margin: 0 0 10px; text-wrap: balance;
+  }
+  .subtitle { color: var(--text-muted); font-size: 16px; margin: 0 0 20px; max-width: 60ch; }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .meta-chip {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 7px 12px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 12.5px; color: var(--text-muted);
+  }
+  .meta-chip b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .tip {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: var(--warning-tint); border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+    border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); margin-bottom: 30px;
+  }
+  .tip b { color: var(--text); }
+
+  /* ---- Section framing ---- */
+  section { margin-bottom: 30px; }
+  .section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .section-time {
+    margin-left: auto; font-size: 12px; color: var(--text-faint);
+    font-family: "JetBrains Mono", monospace; white-space: nowrap;
+  }
+  .section-lede { color: var(--text-faint); font-size: 13.5px; margin: 0 0 16px; }
+
+  /* ---- Flowing script paragraphs ---- */
+  .script p {
+    font-size: 15.5px; color: var(--text); margin: 0 0 14px; max-width: 62ch;
+  }
+  .script p:last-child { margin-bottom: 0; }
+  .script .beat { color: var(--text-muted); }
+  .cue {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--cue-bg); color: var(--cue-text);
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 600;
+    padding: 2px 8px; border-radius: 5px; margin: 0 2px;
+    white-space: normal;
+  }
+  .cue::before { content: "→"; opacity: 0.7; }
+
+  /* one flowing block per demo beat, divided by a quiet rule + small index */
+  .beat-block { display: flex; gap: 14px; padding: 16px 0; border-top: 1px solid var(--border); }
+  .beat-block:first-child { border-top: none; padding-top: 0; }
+  .beat-index {
+    flex-shrink: 0; width: 22px; padding-top: 3px;
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 700; color: var(--text-faint);
+  }
+  .beat-content { min-width: 0; }
+  .beat-content h3 {
+    margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  /* ---- Tech table ---- */
+  .tech-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tech-table th {
+    text-align: left; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-faint); font-weight: 700; padding: 0 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tech-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text-muted); }
+  .tech-table tr:last-child td { border-bottom: none; }
+  .tech-table td.layer { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .tech-table .pill {
+    display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px;
+    padding: 2px 7px; color: var(--brand-300); margin: 2px 4px 2px 0;
+  }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .table-scroll .tech-table { min-width: 560px; }
+  .table-scroll th:first-child, .table-scroll td:first-child { padding-left: 16px; }
+  .table-scroll th:last-child, .table-scroll td:last-child { padding-right: 16px; }
+
+  .flow {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    margin: 16px 0;
+  }
+  .flow-node {
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 600;
+    background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px;
+    padding: 8px 12px; color: var(--text); white-space: nowrap;
+  }
+  .flow-arrow { color: var(--text-faint); font-size: 14px; }
+
+  /* ---- Q&A ---- */
+  .qa { border-left: 2px solid var(--brand-500); padding-left: 14px; margin-bottom: 14px; }
+  .qa:last-child { margin-bottom: 0; }
+  .qa .q { font-weight: 700; font-size: 14px; margin: 0 0 4px; }
+  .qa .a { font-size: 13.5px; color: var(--text-muted); margin: 0; }
+
+  .close-line { text-align: center; padding: 26px 0 8px; color: var(--text-faint); font-size: 13px; }
+  .close-line b { color: var(--text); }
+
+  @media (max-width: 620px) {
+    .section-time { display: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="kicker">Presenter script · read it once, then talk naturally</div>
+  <h1>API Monitor — Demo Walkthrough</h1>
+  <p class="subtitle">Not a slide deck — a talk track. Read it top to bottom once before you go in, then let the app do the rest.</p>
+
+  <div class="meta-row">
+    <div class="meta-chip">Total time <b>~10 min</b></div>
+    <div class="meta-chip">Audience <b>Manager, MTN Nigeria</b></div>
+    <div class="meta-chip">Start in <b>terminal</b></div>
+  </div>
+
+  <div class="tip">
+    <span>⚡</span>
+    <span><b>Prep, right before you walk in:</b> run <code>docker compose down</code> in the project root so the containers are actually stopped. The demo now opens by bringing them up live — if they're already running, that moment falls flat.</span>
+  </div>
+
+  <div class="tip">
+    <span>📦</span>
+    <span><b>Also:</b> the app has no endpoints loaded. Don't apologize for that either — you register something real, live, and everyone watches it start working.</span>
+  </div>
+
+  <!-- ============ SECTION 1: THE OPEN ============ -->
+  <section>
+    <div class="section-head">
+      <h2>1 · The open</h2>
+      <span class="section-time">~90 sec</span>
+    </div>
+    <p class="section-lede">Say this before you touch the keyboard.</p>
+
+    <div class="script">
+      <p>"So — quick context before I show you this. Right now, if someone on our team wants to know whether an internal API or a partner service is actually up, there's no real way to check besides manually pinging it, or waiting until a customer complains. There's no shared history, no dashboard, nothing that tells you an API's been degrading for the last three days.</p>
+      <p>That's the gap this closes. It's a <b>synthetic monitoring platform</b> — you register an endpoint once, and from that point on it gets health-checked automatically, forever, on whatever schedule you set. Could be every minute, could be every hour. And everything it finds — uptime, response time, failures — lands on one dashboard anyone on the team can pull up.</p>
+      <p class="beat">And deployment's deliberately boring — the whole backend is two Docker containers, Postgres and Redis, brought up with one command. Nothing external, nothing to license, nothing that needs its own infra ticket. It's meant for whoever's closest to the pain: DevOps first, but developers and QA get the same visibility without having to ask.</p>
+      <p>Let me just show you, it's faster than explaining it."</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2: THE DEMO ============ -->
+  <section>
+    <div class="section-head">
+      <h2>2 · Show it live</h2>
+      <span class="section-time">~6 min</span>
+    </div>
+    <p class="section-lede">One continuous flow — each beat leads into the next, don't pause for permission.</p>
+
+    <div class="beat-block">
+      <div class="beat-index">01</div>
+      <div class="beat-content">
+        <h3>Start from nothing — bring up the stack</h3>
+        <p><span class="cue">terminal → docker compose up -d</span> "Before anything else — this is the entire deployment." <span class="beat">(run it, let the two containers come up)</span> "Two containers, Postgres and Redis. That's the whole footprint. The app itself is just a Node process on top of that — nothing else to install, nothing else to provision."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">02</div>
+      <div class="beat-content">
+        <h3>Land on the dashboard</h3>
+        <p><span class="cue">open localhost:5173</span> "And here's the dashboard, completely empty — nothing's registered yet. That's actually the best way to see how this works, so let's add something real and watch it come alive."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">03</div>
+      <div class="beat-content">
+        <h3>Add an endpoint</h3>
+        <p><span class="cue">Endpoints → Add Endpoint</span> "I'll give it a name, drop in a real URL, tell it how often to check — every minute is fine for right now — and what a healthy response looks like. Save it." <span class="beat">(fill it in as you talk, hit Save)</span> "That's the entire onboarding step. No code, no config file, no deploy."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">04</div>
+      <div class="beat-content">
+        <h3>Trigger a check</h3>
+        <p>"It'll check on its own in a minute, but let's not wait — I'll just trigger it." <span class="cue">click the ↻ next to the row</span> "And there — status, response time, last checked, all live. In real use that just happens on its own, every minute, for every endpoint you've registered. I'm only doing it by hand so we don't sit here waiting."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">05</div>
+      <div class="beat-content">
+        <h3>Open the endpoint's detail page</h3>
+        <p><span class="cue">click into the endpoint</span> "This is where it gets useful over time — every single check ever run against this endpoint gets stored, so 'is it slow' or 'was it down last night' stops being a guess and becomes a graph you can just look at." <span class="beat">(point at the response-time and availability charts, flick the 24h/7d/30d toggle once)</span></p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">06</div>
+      <div class="beat-content">
+        <h3>Show it at scale</h3>
+        <p><span class="cue">Import</span> "Now, one endpoint's easy. What about a team with forty microservices? Two ways in — a CSV if you've already got a list, or this: point it at any team's OpenAPI spec, hit Discover, and every route in it shows up as a checkbox." <span class="beat">(paste a Swagger URL, click Discover, let the list populate)</span> "Nobody's hand-typing forty rows into a form."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">07</div>
+      <div class="beat-content">
+        <h3>Back to the dashboard</h3>
+        <p><span class="cue">Dashboard</span> "And now it's not empty anymore. Health distribution up here, and down here — this is the one I actually like — every endpoint, sorted worst-first on purpose, so whatever's broken floats straight to the top. And that's not just a percentage, it's 'up for two hours' or 'down for twelve minutes' — how long the current state has actually held."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">08</div>
+      <div class="beat-content">
+        <h3>Close on Reports</h3>
+        <p><span class="cue">Reports</span> "Last stop — this is the rollup. Daily numbers, then weekly: fastest services, slowest services, least stable, best availability. Honestly, this is the page I'd bring to a postmortem."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3: THE CODE ============ -->
+  <section>
+    <div class="section-head">
+      <h2>3 · Under the hood</h2>
+      <span class="section-time">~2 min</span>
+    </div>
+    <p class="section-lede">"Quick word on how it's actually built, for anyone curious —"</p>
+
+    <div class="flow">
+      <span class="flow-node">React + Vite UI</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node">Express API</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node">PostgreSQL</span>
+      <span class="flow-arrow">↺</span>
+      <span class="flow-node">node-cron scheduler</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node">any HTTP endpoint</span>
+    </div>
+
+    <div class="table-scroll">
+      <table class="tech-table">
+        <tr><th>Layer</th><th>Tech</th><th>Why this, not the alternative</th></tr>
+        <tr>
+          <td class="layer">Frontend</td>
+          <td><span class="pill">React</span><span class="pill">TypeScript</span><span class="pill">Tailwind v4</span><span class="pill">Recharts</span></td>
+          <td>Every chart on screen is real data rendered live — nothing's a screenshot or a mock number.</td>
+        </tr>
+        <tr>
+          <td class="layer">Data fetching</td>
+          <td><span class="pill">React Query</span></td>
+          <td>Dashboard and endpoint list refresh themselves every 15 seconds, no polling code to maintain.</td>
+        </tr>
+        <tr>
+          <td class="layer">Backend</td>
+          <td><span class="pill">Express</span><span class="pill">TypeScript</span><span class="pill">Zod</span></td>
+          <td>Every request is schema-validated before it touches the database — bad input never gets stored.</td>
+        </tr>
+        <tr>
+          <td class="layer">Scheduler</td>
+          <td><span class="pill">node-cron</span></td>
+          <td>Ticks every minute, asks "who's due," fires checks in parallel — same loop for 1 endpoint or 500.</td>
+        </tr>
+        <tr>
+          <td class="layer">Database</td>
+          <td><span class="pill">PostgreSQL</span></td>
+          <td>Every check ever run is a row — that history is the whole reason the charts and reports exist.</td>
+        </tr>
+        <tr>
+          <td class="layer">Cache</td>
+          <td><span class="pill">Redis</span></td>
+          <td>Dashboard summary is cached 30 seconds so a room full of people refreshing doesn't hammer Postgres.</td>
+        </tr>
+        <tr>
+          <td class="layer">Infra</td>
+          <td><span class="pill">Docker Compose</span></td>
+          <td>That <code>docker compose up -d</code> from the top of the demo — same command on any internal server, nothing to hand-install.</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4: Q&A ============ -->
+  <section>
+    <div class="section-head">
+      <h2>4 · If they ask</h2>
+      <span class="section-time">buffer</span>
+    </div>
+
+    <div class="qa">
+      <p class="q">"Does this hold up past a handful of endpoints?"</p>
+      <p class="a">"Yes — the scheduler checks every due endpoint in parallel each tick, and the OpenAPI importer just did forty in one click a minute ago."</p>
+    </div>
+    <div class="qa">
+      <p class="q">"What happens when something actually goes down?"</p>
+      <p class="a">"It's on the dashboard immediately — Recent Failures and the health list both update within the minute. Alerting to Slack or email is the natural next step; I scoped it out deliberately for this first version."</p>
+    </div>
+    <div class="qa">
+      <p class="q">"Can it reach our internal services, not just public sites?"</p>
+      <p class="a">"Anything reachable from wherever we deploy it — internal network included. That's the point of running it ourselves instead of a third-party monitor."</p>
+    </div>
+  </section>
+
+  <p class="close-line">Land on: <b>"Add an API once, and you're tracking it forever."</b> Then stop talking.</p>
+
+</div>

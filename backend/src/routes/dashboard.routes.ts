@@ -6,3 +6,4 @@ export const dashboardRouter = Router();
 
 dashboardRouter.get("/summary", asyncHandler(dashboardController.summary));
 dashboardRouter.get("/trends", asyncHandler(dashboardController.trends));
+dashboardRouter.get("/endpoint-health", asyncHandler(dashboardController.endpointHealth));

@@ -59,6 +59,8 @@ export interface DailyReport {
 
 export interface WeeklyReport {
   top_fast_apis: Array<{ endpoint_id: number; name: string; avg_response_time: number }>;
+  top_slow_apis: Array<{ endpoint_id: number; name: string; avg_response_time: number }>;
+  top_slowest_apis?: Array<{ endpoint_id: number; name: string; avg_response_time: number }>;
   most_unstable_apis: Array<{ endpoint_id: number; name: string; success_rate: number }>;
   best_availability: Array<{ endpoint_id: number; name: string; availability: number }>;
 }
