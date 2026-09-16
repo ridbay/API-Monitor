@@ -1,0 +1,8 @@
+{
+  "name": "run-api-monitor-driver",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}
