@@ -1,4 +1,5 @@
 import { pool } from "../config/db";
+import { endpointRepository } from "../repositories/endpoint.repository";
 
 function toLocalDateLabel(date: Date): string {
   const year = date.getFullYear();
@@ -124,6 +125,34 @@ export const reportService = {
 
   async getMonthly() {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endpoints = await endpointRepository.findAllWithStats();
+
+    const servicesTracked = endpoints.length;
+    const avgUptime =
+      endpoints.length > 0
+        ? Number((endpoints.reduce((sum, e) => sum + Number(e.availability), 0) / endpoints.length).toFixed(2))
+        : 0;
+    const currentlyDegraded = endpoints.filter(
+      (e) => e.status === "down" || (e.status === "up" && Number(e.availability) < 98)
+    ).length;
+
+    // An "incident" is the start of a down-streak, not every failed check —
+    // a 10-minute outage checked every minute should count once, not ten times.
+    const { rows: incidentRows } = await pool.query(
+      `WITH ordered AS (
+         SELECT
+           mr.status,
+           mr.created_at,
+           LAG(mr.status) OVER (PARTITION BY mr.endpoint_id ORDER BY mr.created_at) AS prev_status
+         FROM monitoring_results mr
+         JOIN endpoints e ON e.id = mr.endpoint_id
+         WHERE e.deleted_at IS NULL
+       )
+       SELECT COUNT(*)::int AS incidents
+       FROM ordered
+       WHERE status = 'down' AND prev_status IS DISTINCT FROM 'down' AND created_at >= $1`,
+      [since]
+    );
 
     const { rows: uptimeRanking } = await pool.query(
       `SELECT e.id AS endpoint_id, e.name,
@@ -138,10 +167,10 @@ export const reportService = {
     );
 
     return {
-      services_tracked: 844,
-      avg_uptime: 93.65,
-      incidents: 901,
-      currently_degraded: 67,
+      services_tracked: servicesTracked,
+      avg_uptime: avgUptime,
+      incidents: incidentRows[0].incidents,
+      currently_degraded: currentlyDegraded,
       uptime_ranking: uptimeRanking,
     };
   },

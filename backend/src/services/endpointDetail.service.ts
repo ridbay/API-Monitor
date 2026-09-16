@@ -25,7 +25,20 @@ export const endpointDetailService = {
     }));
   },
 
-  async getStatusCodeDistribution(endpointId: number) {
+  async getStatusCodeDistribution(endpointId: number, hours?: number) {
+    if (hours) {
+      const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+      const { rows } = await pool.query(
+        `SELECT status_code, COUNT(*)::int AS count
+         FROM monitoring_results
+         WHERE endpoint_id = $1 AND status_code IS NOT NULL AND created_at >= $2
+         GROUP BY status_code
+         ORDER BY count DESC`,
+        [endpointId, since]
+      );
+      return rows;
+    }
+
     const { rows } = await pool.query(
       `SELECT status_code, COUNT(*)::int AS count
        FROM monitoring_results

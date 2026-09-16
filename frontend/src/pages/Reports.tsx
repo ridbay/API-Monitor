@@ -191,10 +191,10 @@ export function Reports() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <StatTile label="Services tracked" value={monthly?.services_tracked ?? "844"} />
-              <StatTile label="Avg uptime (30d)" value={`${monthly?.avg_uptime ?? "93.65"}%`} />
-              <StatTile label="Incidents (30d)" value={monthly?.incidents ?? "901"} />
-              <StatTile label="Currently degraded" value={monthly?.currently_degraded ?? "67"} />
+              <StatTile label="Services tracked" value={monthly?.services_tracked ?? 0} />
+              <StatTile label="Avg uptime (30d)" value={`${monthly?.avg_uptime ?? 0}%`} />
+              <StatTile label="Incidents (30d)" value={monthly?.incidents ?? 0} />
+              <StatTile label="Currently degraded" value={monthly?.currently_degraded ?? 0} />
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

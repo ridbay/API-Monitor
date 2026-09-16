@@ -5,8 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json && cp src/config/schema.sql dist/config/schema.sql",
+    "start": "node dist/config/migrate.js && node dist/index.js",
     "migrate": "tsx src/config/migrate.ts",
     "lint": "tsc --noEmit"
   },
