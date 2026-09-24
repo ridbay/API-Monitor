@@ -210,12 +210,12 @@
 
   <div class="tip">
     <span>⚡</span>
-    <span><b>Prep, right before you walk in:</b> run <code>docker compose down</code> in the project root so the containers are actually stopped. The demo now opens by bringing them up live — if they're already running, that moment falls flat.</span>
+    <span><b>Prep, right before you walk in:</b> run <code>docker compose down</code> in the project root so all four containers are actually stopped. The demo opens by bringing the whole app up live — if it's already running, that moment falls flat.</span>
   </div>
 
   <div class="tip">
     <span>📦</span>
-    <span><b>Also:</b> the app has no endpoints loaded. Don't apologize for that either — you register something real, live, and everyone watches it start working.</span>
+    <span><b>Also good news:</b> real endpoints are already registered — MTN VMS, MOMO, MOMO Developer, Github — and one of them (MOMO sandbox) has genuinely been failing for a while. Don't scrub past that, it's the best proof point in the whole demo.</span>
   </div>
 
   <!-- ============ SECTION 1: THE OPEN ============ -->
@@ -229,7 +229,7 @@
     <div class="script">
       <p>"So — quick context before I show you this. Right now, if someone on our team wants to know whether an internal API or a partner service is actually up, there's no real way to check besides manually pinging it, or waiting until a customer complains. There's no shared history, no dashboard, nothing that tells you an API's been degrading for the last three days.</p>
       <p>That's the gap this closes. It's a <b>synthetic monitoring platform</b> — you register an endpoint once, and from that point on it gets health-checked automatically, forever, on whatever schedule you set. Could be every minute, could be every hour. And everything it finds — uptime, response time, failures — lands on one dashboard anyone on the team can pull up.</p>
-      <p class="beat">And deployment's deliberately boring — the whole backend is two Docker containers, Postgres and Redis, brought up with one command. Nothing external, nothing to license, nothing that needs its own infra ticket. It's meant for whoever's closest to the pain: DevOps first, but developers and QA get the same visibility without having to ask.</p>
+      <p class="beat">And deployment's deliberately boring — the entire thing, frontend and backend included, is four Docker containers brought up with one command. Nothing external, nothing to license, nothing that needs its own infra ticket. It's meant for whoever's closest to the pain: DevOps first, but developers and QA get the same visibility without having to ask.</p>
       <p>Let me just show you, it's faster than explaining it."</p>
     </div>
   </section>
@@ -245,24 +245,24 @@
     <div class="beat-block">
       <div class="beat-index">01</div>
       <div class="beat-content">
-        <h3>Start from nothing — bring up the stack</h3>
-        <p><span class="cue">terminal → docker compose up -d</span> "Before anything else — this is the entire deployment." <span class="beat">(run it, let the two containers come up)</span> "Two containers, Postgres and Redis. That's the whole footprint. The app itself is just a Node process on top of that — nothing else to install, nothing else to provision."</p>
+        <h3>Bring up the whole stack</h3>
+        <p><span class="cue">terminal → docker compose up -d --build</span> "Before anything else — this is the entire deployment." <span class="beat">(run it, let all four containers come up)</span> "Postgres, Redis, the API, and the frontend — four containers, one command. Nothing else to install anywhere, on any machine that has Docker."</p>
       </div>
     </div>
 
     <div class="beat-block">
       <div class="beat-index">02</div>
       <div class="beat-content">
-        <h3>Land on the dashboard</h3>
-        <p><span class="cue">open localhost:5173</span> "And here's the dashboard, completely empty — nothing's registered yet. That's actually the best way to see how this works, so let's add something real and watch it come alive."</p>
+        <h3>Land on the dashboard — it's already working</h3>
+        <p><span class="cue">open localhost:5173</span> "And here's the dashboard. I've already got a few real MTN endpoints registered — the MOMO API, our visitor management system, a couple more. This one's been running unattended, so this is genuinely what it looks like day to day, not a staged demo state." <span class="beat">(point at the Endpoint Health list — one entry should be red)</span> "And that one — MOMO sandbox — has actually been down for a while now. Nobody was watching it happen. It just got caught."</p>
       </div>
     </div>
 
     <div class="beat-block">
       <div class="beat-index">03</div>
       <div class="beat-content">
-        <h3>Add an endpoint</h3>
-        <p><span class="cue">Endpoints → Add Endpoint</span> "I'll give it a name, drop in a real URL, tell it how often to check — every minute is fine for right now — and what a healthy response looks like. Save it." <span class="beat">(fill it in as you talk, hit Save)</span> "That's the entire onboarding step. No code, no config file, no deploy."</p>
+        <h3>Add one more, live</h3>
+        <p><span class="cue">Endpoints → Add Endpoint</span> "Let's add one more so you see the onboarding step itself." <span class="beat">(fill in name, URL, interval, hit Save)</span> "Name, URL, how often to check it, what a healthy response looks like. Save — that's the entire flow. No code, no config file, no deploy."</p>
       </div>
     </div>
 
@@ -294,7 +294,7 @@
       <div class="beat-index">07</div>
       <div class="beat-content">
         <h3>Back to the dashboard</h3>
-        <p><span class="cue">Dashboard</span> "And now it's not empty anymore. Health distribution up here, and down here — this is the one I actually like — every endpoint, sorted worst-first on purpose, so whatever's broken floats straight to the top. And that's not just a percentage, it's 'up for two hours' or 'down for twelve minutes' — how long the current state has actually held."</p>
+        <p><span class="cue">Dashboard</span> "And now there's one more endpoint in the mix. Health distribution up here, and down here — this is the one I actually like — every endpoint, sorted worst-first on purpose, so whatever's broken floats straight to the top. That's not just a percentage, it's 'up for two hours' or 'down for forty minutes' — how long the current state has actually held. MOMO's still sitting right there at the top, exactly where it should be."</p>
       </div>
     </div>
 
@@ -302,7 +302,7 @@
       <div class="beat-index">08</div>
       <div class="beat-content">
         <h3>Close on Reports</h3>
-        <p><span class="cue">Reports</span> "Last stop — this is the rollup. Daily numbers, weekly rankings (fastest, slowest, least stable, best availability), and the 30-day view: 844 services tracked, 93.65% uptime, 30-day incidents, currently degraded, and uptime ranking. Honestly, this is the page I'd bring to a postmortem."</p>
+        <p><span class="cue">Reports</span> "Last stop, and it's three tiers now. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking." <span class="beat">(scroll to the bottom)</span> "And down here — every outage today, service by service, with the actual error. This is the page I'd bring to a postmortem."</p>
       </div>
     </div>
   </section>
@@ -362,8 +362,8 @@
         </tr>
         <tr>
           <td class="layer">Infra</td>
-          <td><span class="pill">Docker Compose</span></td>
-          <td>That <code>docker compose up -d</code> from the top of the demo — same command on any internal server, nothing to hand-install.</td>
+          <td><span class="pill">Docker Compose</span><span class="pill">nginx</span></td>
+          <td>That <code>docker compose up -d --build</code> from the top of the demo — nginx serves the built frontend and reverse-proxies <code>/api</code> straight to the backend container, same command on any internal server.</td>
         </tr>
       </table>
     </div>

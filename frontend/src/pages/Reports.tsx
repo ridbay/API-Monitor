@@ -93,63 +93,12 @@ export function Reports() {
         {dailyLoading || !daily ? (
           <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <StatTile label="Availability" value={`${daily.availability}%`} />
-              <StatTile label="Average Response" value={`${daily.avg_response_time} ms`} />
-              <StatTile label="Total Checks" value={daily.total_checks} />
-              <StatTile label="Failures" value={daily.failures} />
-            </div>
-
-            <Card>
-              <div className="mb-3">
-                <h3 className="text-sm font-semibold text-[var(--color-text)]">Outages today</h3>
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  All detected incidents and outages across monitored services.
-                </p>
-              </div>
-
-              {!daily.outages || daily.outages.length === 0 ? (
-                <p className="py-6 text-center text-sm text-[var(--color-text-faint)]">
-                  No outages detected today 🎉
-                </p>
-              ) : (
-                <Table>
-                  <Thead>
-                    <tr>
-                      <Th>Service</Th>
-                      <Th>Time</Th>
-                      <Th>Status</Th>
-                      <Th>Error</Th>
-                    </tr>
-                  </Thead>
-                  <Tbody>
-                    {daily.outages.map((outage) => (
-                      <tr key={outage.id} className="transition-colors hover:bg-[var(--color-surface-hover)]">
-                        <Td>
-                          <Link
-                            to={`/endpoints/${outage.endpoint_id}`}
-                            className="font-medium text-[var(--color-text)] hover:text-brand-300 hover:underline"
-                          >
-                            {outage.endpoint_name}
-                          </Link>
-                        </Td>
-                        <Td className="whitespace-nowrap text-xs text-[var(--color-text-muted)]">
-                          {new Date(outage.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </Td>
-                        <Td>
-                          <Badge tone="failure">{outage.status_code ?? "Down"}</Badge>
-                        </Td>
-                        <Td className="max-w-md truncate text-xs text-[var(--color-text-muted)]" title={outage.error_message ?? ""}>
-                          {outage.error_message || "Check failed"}
-                        </Td>
-                      </tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              )}
-            </Card>
-          </>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatTile label="Availability" value={`${daily.availability}%`} />
+            <StatTile label="Average Response" value={`${daily.avg_response_time} ms`} />
+            <StatTile label="Total Checks" value={daily.total_checks} />
+            <StatTile label="Failures" value={daily.failures} />
+          </div>
         )}
       </section>
 
@@ -208,6 +157,57 @@ export function Reports() {
             </div>
           </>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <Card>
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-[var(--color-text)]">Outages today</h3>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              All detected incidents and outages across monitored services.
+            </p>
+          </div>
+
+          {!daily?.outages || daily.outages.length === 0 ? (
+            <p className="py-6 text-center text-sm text-[var(--color-text-faint)]">
+              No outages detected today 🎉
+            </p>
+          ) : (
+            <Table>
+              <Thead>
+                <tr>
+                  <Th>Service</Th>
+                  <Th>Time</Th>
+                  <Th>Status</Th>
+                  <Th>Error</Th>
+                </tr>
+              </Thead>
+              <Tbody>
+                {daily.outages.map((outage) => (
+                  <tr key={outage.id} className="transition-colors hover:bg-[var(--color-surface-hover)]">
+                    <Td>
+                      <Link
+                        to={`/endpoints/${outage.endpoint_id}`}
+                        className="font-medium text-[var(--color-text)] hover:text-brand-300 hover:underline"
+                      >
+                        {outage.endpoint_name}
+                      </Link>
+                    </Td>
+                    <Td className="whitespace-nowrap text-xs text-[var(--color-text-muted)]">
+                      {new Date(outage.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </Td>
+                    <Td>
+                      <Badge tone="failure">{outage.status_code ?? "Down"}</Badge>
+                    </Td>
+                    <Td className="max-w-md truncate text-xs text-[var(--color-text-muted)]" title={outage.error_message ?? ""}>
+                      {outage.error_message || "Check failed"}
+                    </Td>
+                  </tr>
+                ))}
+              </Tbody>
+            </Table>
+          )}
+        </Card>
       </section>
     </div>
   );

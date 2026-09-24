@@ -521,6 +521,40 @@ The demo will be considered successful if you can:
 
 ✅ Present everything through a clean Tailwind dashboard
 
+14. Phase 2 Vision: AIOps Roadmap (Post-Demo, Not in v1 Scope)
+
+Context
+
+Manager feedback (2026-09-22) describes a broader long-term vision that extends beyond the 30 Sep 2026 demo. Several items below directly reverse the "Out of Scope" list in Section 4. They are captured here as a roadmap, not as work planned for the current delivery date.
+
+14.1 Bulk Concurrent Performance Testing Engine
+
+Extend Module 4 beyond single scheduled health checks into on-demand load testing: fire concurrent requests at an endpoint (configurable concurrency, duration, ramp-up) and report latency percentiles (p50/p95/p99), throughput, and error rate under load.
+
+14.2 Internal MTN Service & Pod Observability
+
+Move beyond HTTP-only synthetic checks to pull native Kubernetes/OpenShift signals: pod status, restarts, CPU/memory, liveness/readiness probe results. Likely integration points: Kubernetes API server, Prometheus/OpenShift metrics.
+
+14.3 Auto-Detection of Errors & Root Cause Analysis
+
+Anomaly detection over collected metrics (response time, error rate, status codes) to flag issues before they're manually noticed, plus a diagnostic layer that correlates symptoms (e.g. pod restarts + latency spike + error code pattern) to suggest a likely root cause.
+
+14.4 Decision Layer & Auto-Remediation
+
+A proposal-and-approval workflow: system detects an issue, proposes a remediation action (restart pod, scale replica, clear cache, roll back), and a human approves before it executes. Once trust is established, selected low-risk actions can be automated without approval. Requires an audit trail of every action taken and by whom/what.
+
+14.5 Microservices Deployment (OpenShift/Kubernetes)
+
+The platform itself is re-architected from the current Express monolith + cron worker (Section 6) into independently deployable services (ingestion, monitoring engine, remediation engine, API/BFF), packaged as containers and deployed as pods on OpenShift/Kubernetes.
+
+14.6 Chatbot / AI Agent Interface
+
+A conversational interface (likely backed by an LLM) for querying system/endpoint status, summarizing incidents, and triggering approved remediation actions in natural language, in addition to the dashboard UI.
+
+Sequencing Note
+
+Recommended order: 14.1 and 14.2 first (extend existing monitoring primitives), then 14.3 (needs data from 14.1/14.2 to detect against), then 14.4 (needs 14.3's detections to act on), with 14.5 as an infrastructure migration that can happen in parallel, and 14.6 last as a UI layer over the completed decision pipeline.
+
 Recommended Project Structure
 api-monitoring-platform/
 
