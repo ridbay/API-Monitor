@@ -3,7 +3,7 @@
 Run these from the repo root (`/Users/ridbay/Desktop/assignment`), where `docker-compose.yml` lives.
 
 ## Services
-- **frontend** (`http://localhost:5173`): Nginx serving the React production bundle and reverse-proxying `/api/` to the backend.
+- **frontend** (`http://localhost:8088`): Nginx serving the React production bundle and reverse-proxying `/api/` to the backend.
 - **backend** (`http://localhost:4001`): Express API and background synthetic check scheduler with automatic database migrations on startup.
 - **postgres** (`localhost:5434`): PostgreSQL 15 database storing endpoints, monitoring results, and statistics.
 - **redis** (`localhost:6379`): Redis cache for dashboard summaries.
@@ -89,3 +89,4 @@ docker compose up -d --remove-orphans
 
 - Postgres is mapped to host port **5434** (not the default 5432) — a native Homebrew Postgres service was already using 5432 on this machine. `backend/.env`'s `DATABASE_URL` points at `5434` accordingly.
 - Redis is used for a 30-second cache of the `/api/dashboard/summary` response.
+- Frontend is mapped to host port **8088** (not Vite's default 5173) — this machine regularly has an unrelated side-project's `vite` dev server squatting on 5173/`::1:5173`, which silently shadows the container on `localhost:5173` (macOS resolves `localhost` to `::1` first). 8088 avoids the collision entirely.
