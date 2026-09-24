@@ -123,3 +123,29 @@ export interface DiscoveredEndpoint {
   url: string;
   method: HttpMethod;
 }
+
+export interface LoadTestOptions {
+  concurrency: number;
+  requestCount: number;
+}
+
+export interface LoadTestResult {
+  endpoint_id: number;
+  concurrency: number;
+  request_count: number;
+  success_count: number;
+  failure_count: number;
+  error_rate: number;
+  duration_ms: number;
+  throughput_rps: number;
+  latency: {
+    min: number;
+    max: number;
+    avg: number;
+    p50: number;
+    p95: number;
+    p99: number;
+  };
+  status_code_breakdown: Record<string, number>;
+  ran_at: string;
+}

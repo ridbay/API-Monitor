@@ -11,7 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Zap } from "lucide-react";
+import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { ChartContainer } from "../components/ui/ChartContainer";
 import { Button } from "../components/ui/Button";
@@ -24,9 +25,11 @@ import {
   useEndpoint,
   useEndpointStatusCodes,
   useEndpointTrends,
+  useRunLoadTest,
   useUpdateEndpoint,
 } from "../hooks/useEndpoints";
 import { chartAxisProps, chartGridProps, chartTooltipProps, CHART_COLORS } from "../lib/chartTheme";
+import type { LoadTestResult } from "../types";
 
 const RANGE_OPTIONS = [
   { label: "24 Hours", hours: 24 },
@@ -184,6 +187,8 @@ export function EndpointDetails() {
         )}
       </ChartContainer>
 
+      <LoadTestPanel endpointId={endpointId} />
+
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Endpoint">
         <EditEndpointForm
           endpoint={endpoint}
@@ -273,5 +278,103 @@ function EditEndpointForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function LoadTestStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+      <p className="text-xs font-medium text-[var(--color-text-faint)]">{label}</p>
+      <p className="mt-1 text-xl font-bold tracking-tight text-[var(--color-text)]">{value}</p>
+    </div>
+  );
+}
+
+function LoadTestPanel({ endpointId }: { endpointId: number }) {
+  const [concurrency, setConcurrency] = useState(10);
+  const [requestCount, setRequestCount] = useState(50);
+  const runLoadTest = useRunLoadTest(endpointId);
+  const result: LoadTestResult | undefined = runLoadTest.data;
+
+  return (
+    <Card>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--color-text)]">Load Test</h3>
+          <p className="max-w-md text-xs text-[var(--color-text-muted)]">
+            Fire a burst of concurrent requests to measure latency and throughput under load. Results aren't
+            counted toward uptime or availability.
+          </p>
+        </div>
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            runLoadTest.mutate({ concurrency, requestCount });
+          }}
+        >
+          <div>
+            <Label htmlFor="lt-concurrency">Concurrency</Label>
+            <Input
+              id="lt-concurrency"
+              type="number"
+              min={1}
+              max={50}
+              required
+              value={concurrency}
+              onChange={(e) => setConcurrency(Number(e.target.value))}
+              className="w-24"
+            />
+          </div>
+          <div>
+            <Label htmlFor="lt-request-count">Requests</Label>
+            <Input
+              id="lt-request-count"
+              type="number"
+              min={1}
+              max={500}
+              required
+              value={requestCount}
+              onChange={(e) => setRequestCount(Number(e.target.value))}
+              className="w-24"
+            />
+          </div>
+          <Button type="submit" disabled={runLoadTest.isPending}>
+            <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
+            {runLoadTest.isPending ? "Running…" : "Run Load Test"}
+          </Button>
+        </form>
+      </div>
+
+      {runLoadTest.isError && <p className="text-sm text-failure-400">Load test failed to run. Try again.</p>}
+
+      {result && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <LoadTestStat label="Throughput" value={`${result.throughput_rps} req/s`} />
+            <LoadTestStat label="Error rate" value={`${result.error_rate}%`} />
+            <LoadTestStat label="Success / Failure" value={`${result.success_count} / ${result.failure_count}`} />
+            <LoadTestStat label="Duration" value={`${result.duration_ms} ms`} />
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <LoadTestStat label="Min" value={`${result.latency.min} ms`} />
+            <LoadTestStat label="p50" value={`${result.latency.p50} ms`} />
+            <LoadTestStat label="p95" value={`${result.latency.p95} ms`} />
+            <LoadTestStat label="p99" value={`${result.latency.p99} ms`} />
+            <LoadTestStat label="Max" value={`${result.latency.max} ms`} />
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-[var(--color-text-faint)]">Status code breakdown</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(result.status_code_breakdown).map(([code, count]) => (
+                <Badge key={code} tone={code !== "error" && Number(code) < 400 ? "success" : "failure"}>
+                  {code} × {count}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }

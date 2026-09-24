@@ -8,6 +8,7 @@ import { dashboardRouter } from "./routes/dashboard.routes";
 import { reportRouter } from "./routes/report.routes";
 import { importRouter } from "./routes/import.routes";
 import { openapiRouter } from "./routes/openapi.routes";
+import { loadTestRouter } from "./routes/loadTest.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -26,6 +27,7 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/reports", reportRouter);
 app.use("/api/import", importRouter);
 app.use("/api/openapi", openapiRouter);
+app.use("/api/load-test", loadTestRouter);
 
 app.use(errorHandler);
 

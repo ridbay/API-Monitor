@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { endpointsApi, monitorApi } from "../services/api";
-import type { CreateEndpointInput } from "../types";
+import { endpointsApi, loadTestApi, monitorApi } from "../services/api";
+import type { CreateEndpointInput, LoadTestOptions } from "../types";
 
 export function useEndpoints() {
   return useQuery({ queryKey: ["endpoints"], queryFn: endpointsApi.list, refetchInterval: 15_000 });
@@ -64,5 +64,13 @@ export function useRunAllChecks() {
       queryClient.invalidateQueries({ queryKey: ["endpoints"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
+  });
+}
+
+// Not wired to invalidate endpoints/dashboard queries: load-test bursts are
+// deliberately kept out of the uptime/availability stats those views show.
+export function useRunLoadTest(id: number) {
+  return useMutation({
+    mutationFn: (options: LoadTestOptions) => loadTestApi.run(id, options),
   });
 }

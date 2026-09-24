@@ -8,6 +8,8 @@ import type {
   EndpointHealth,
   EndpointTrendPoint,
   EndpointWithStats,
+  LoadTestOptions,
+  LoadTestResult,
   MonthlyReport,
   StatusCodeCount,
   TrendPoint,
@@ -69,4 +71,9 @@ export const openapiApi = {
       .then((r) => r.data),
   import: (endpoints: CreateEndpointInput[]) =>
     api.post("/openapi/import", { endpoints }).then((r) => r.data),
+};
+
+export const loadTestApi = {
+  run: (id: number, options: LoadTestOptions) =>
+    api.post<LoadTestResult>(`/load-test/${id}/run`, options).then((r) => r.data),
 };
