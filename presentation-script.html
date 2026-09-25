@@ -310,7 +310,7 @@
       <div class="beat-index">09</div>
       <div class="beat-content">
         <h3>Close on Reports</h3>
-        <p><span class="cue">Reports</span> "Last stop, and it's three tiers now. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking." <span class="beat">(scroll to the bottom)</span> "And down here — every outage today, service by service, with the actual error. This is the page I'd bring to a postmortem."</p>
+        <p><span class="cue">Reports</span> "Last stop, and it's three tiers now. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking." <span class="beat">(scroll to the bottom)</span> "And down here — every outage today, service by service, with the actual error. And next to it — this is the other half of what you asked for, root-cause analysis." <span class="beat">(point at the Likely Cause column)</span> "Every failure gets auto-classified — timeout, DNS issue, connection refused, server error, client error — instead of someone reading a raw error string and guessing what it means. It's rule-based against the error patterns we already capture, not a model, so I can tell you exactly why it called each one. This is the page I'd bring to a postmortem."</p>
       </div>
     </div>
   </section>
@@ -440,6 +440,10 @@
     <div class="qa">
       <p class="q">"Can it reach our internal services, not just public sites?"</p>
       <p class="a">"Anything reachable from wherever we deploy it — internal network included. That's the point of running it ourselves instead of a third-party monitor."</p>
+    </div>
+    <div class="qa">
+      <p class="q">"Is the root-cause thing actually AI?"</p>
+      <p class="a">"Not yet, and I'd rather be straight about that — it's pattern-matching against the error strings we already capture, not a model. It gets you from 'it's down' to 'why' today. Actual anomaly detection — catching a slow decline before it becomes an outage, not just classifying it after — is the logical next step, and it's on the roadmap I put together for exactly the kind of platform you described."</p>
     </div>
   </section>
 
