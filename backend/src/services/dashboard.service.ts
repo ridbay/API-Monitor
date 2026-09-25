@@ -1,6 +1,7 @@
 import { pool } from "../config/db";
 import { endpointRepository } from "../repositories/endpoint.repository";
 import { monitoringResultRepository } from "../repositories/monitoringResult.repository";
+import { classifyFailure } from "./rootCause.service";
 
 const HEALTHY_AVAILABILITY_THRESHOLD = 98;
 
@@ -39,7 +40,11 @@ export const dashboardService = {
   },
 
   async getRecentFailures(limit = 20) {
-    return monitoringResultRepository.findRecentFailures(limit);
+    const failures = await monitoringResultRepository.findRecentFailures(limit);
+    return failures.map((failure) => ({
+      ...failure,
+      likely_cause: classifyFailure(failure.status_code, failure.error_message),
+    }));
   },
 
   async getEndpointHealth() {

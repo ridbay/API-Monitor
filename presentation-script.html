@@ -203,7 +203,7 @@
   <p class="subtitle">Not a slide deck — a talk track. Read it top to bottom once before you go in, then let the app do the rest.</p>
 
   <div class="meta-row">
-    <div class="meta-chip">Total time <b>~10 min</b></div>
+    <div class="meta-chip">Total time <b>~11 min</b></div>
     <div class="meta-chip">Audience <b>Manager, MTN Nigeria</b></div>
     <div class="meta-chip">Start in <b>terminal</b></div>
   </div>
@@ -238,7 +238,7 @@
   <section>
     <div class="section-head">
       <h2>2 · Show it live</h2>
-      <span class="section-time">~6 min</span>
+      <span class="section-time">~7 min</span>
     </div>
     <p class="section-lede">One continuous flow — each beat leads into the next, don't pause for permission.</p>
 
@@ -285,13 +285,21 @@
     <div class="beat-block">
       <div class="beat-index">06</div>
       <div class="beat-content">
+        <h3>Stress it on demand</h3>
+        <p><span class="cue">scroll to Load Test → set concurrency/requests → Run Load Test</span> "One more thing on this page, and it's a direct answer to something you asked for — a performance testing engine, not just a ping every minute. I can fire a burst of concurrent requests at this endpoint right now." <span class="beat">(run it, point at the results as they land)</span> "Latency percentiles — p50, p95, p99 — not just an average, plus throughput and error rate under load. Same monitoring engine, just triggered on demand instead of on a schedule. And it's kept out of the uptime numbers on purpose — a load-test burst shouldn't make an endpoint look flakier than it actually is day to day."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">07</div>
+      <div class="beat-content">
         <h3>Show it at scale</h3>
         <p><span class="cue">Import</span> "Now, one endpoint's easy. What about a team with forty microservices? Two ways in — a CSV if you've already got a list, or this: point it at any team's OpenAPI spec, hit Discover, and every route in it shows up as a checkbox." <span class="beat">(paste a Swagger URL, click Discover, let the list populate)</span> "Nobody's hand-typing forty rows into a form."</p>
       </div>
     </div>
 
     <div class="beat-block">
-      <div class="beat-index">07</div>
+      <div class="beat-index">08</div>
       <div class="beat-content">
         <h3>Back to the dashboard</h3>
         <p><span class="cue">Dashboard</span> "And now there's one more endpoint in the mix. Health distribution up here, and down here — this is the one I actually like — every endpoint, sorted worst-first on purpose, so whatever's broken floats straight to the top. That's not just a percentage, it's 'up for two hours' or 'down for forty minutes' — how long the current state has actually held. MOMO's still sitting right there at the top, exactly where it should be."</p>
@@ -299,7 +307,7 @@
     </div>
 
     <div class="beat-block">
-      <div class="beat-index">08</div>
+      <div class="beat-index">09</div>
       <div class="beat-content">
         <h3>Close on Reports</h3>
         <p><span class="cue">Reports</span> "Last stop, and it's three tiers now. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking." <span class="beat">(scroll to the bottom)</span> "And down here — every outage today, service by service, with the actual error. This is the page I'd bring to a postmortem."</p>

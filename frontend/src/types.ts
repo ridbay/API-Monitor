@@ -37,6 +37,20 @@ export interface DashboardSummary {
   recent_failures: RecentFailure[];
 }
 
+export type FailureCategory =
+  | "timeout"
+  | "dns"
+  | "connection_refused"
+  | "connection_reset"
+  | "server_error"
+  | "client_error"
+  | "unknown";
+
+export interface RootCause {
+  category: FailureCategory;
+  label: string;
+}
+
 export interface RecentFailure {
   id: number;
   endpoint_id: number;
@@ -44,6 +58,7 @@ export interface RecentFailure {
   status_code: number | null;
   error_message: string | null;
   created_at: string;
+  likely_cause?: RootCause;
 }
 
 export interface TrendPoint {
@@ -78,6 +93,7 @@ export interface OutageItem {
   status_code: number | null;
   error_message: string | null;
   created_at: string;
+  likely_cause?: RootCause;
 }
 
 export interface DailyReport {

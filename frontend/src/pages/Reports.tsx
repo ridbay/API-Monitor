@@ -3,6 +3,7 @@ import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { Table, Tbody, Td, Th, Thead } from "../components/ui/Table";
 import { useDailyReport, useMonthlyReport, useWeeklyReport } from "../hooks/useDashboard";
+import { ROOT_CAUSE_SHORT_LABEL, ROOT_CAUSE_TONE } from "../lib/rootCause";
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -180,6 +181,7 @@ export function Reports() {
                   <Th>Time</Th>
                   <Th>Status</Th>
                   <Th>Error</Th>
+                  <Th>Likely Cause</Th>
                 </tr>
               </Thead>
               <Tbody>
@@ -201,6 +203,17 @@ export function Reports() {
                     </Td>
                     <Td className="max-w-md truncate text-xs text-[var(--color-text-muted)]" title={outage.error_message ?? ""}>
                       {outage.error_message || "Check failed"}
+                    </Td>
+                    <Td>
+                      {outage.likely_cause ? (
+                        <span title={outage.likely_cause.label}>
+                          <Badge tone={ROOT_CAUSE_TONE[outage.likely_cause.category]}>
+                            {ROOT_CAUSE_SHORT_LABEL[outage.likely_cause.category]}
+                          </Badge>
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </Td>
                   </tr>
                 ))}

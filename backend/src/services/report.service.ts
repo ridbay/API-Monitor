@@ -1,5 +1,6 @@
 import { pool } from "../config/db";
 import { endpointRepository } from "../repositories/endpoint.repository";
+import { classifyFailure } from "./rootCause.service";
 
 function toLocalDateLabel(date: Date): string {
   const year = date.getFullYear();
@@ -46,13 +47,18 @@ export const reportService = {
     const { total_checks, up_count, failures, avg_response_time } = rows[0];
     const availability = total_checks > 0 ? Number(((up_count / total_checks) * 100).toFixed(2)) : 0;
 
+    const outagesWithCause = outages.map((outage) => ({
+      ...outage,
+      likely_cause: classifyFailure(outage.status_code, outage.error_message),
+    }));
+
     return {
       date: toLocalDateLabel(start),
       availability,
       avg_response_time,
       total_checks,
       failures,
-      outages,
+      outages: outagesWithCause,
     };
   },
 

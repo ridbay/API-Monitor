@@ -13,6 +13,14 @@ export function useEndpointHealth() {
   });
 }
 
+export function useDashboardTrends(hours = 24) {
+  return useQuery({
+    queryKey: ["dashboard", "trends", hours],
+    queryFn: () => dashboardApi.trends(hours),
+    refetchInterval: 30_000,
+  });
+}
+
 export function useDailyReport(date?: string) {
   return useQuery({ queryKey: ["reports", "daily", date], queryFn: () => reportsApi.daily(date) });
 }
