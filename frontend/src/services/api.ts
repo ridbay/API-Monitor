@@ -1,5 +1,6 @@
 import axios from "axios";
 import type {
+  ChatResponse,
   CreateEndpointInput,
   CsvPreviewResult,
   DailyReport,
@@ -76,4 +77,8 @@ export const openapiApi = {
 export const loadTestApi = {
   run: (id: number, options: LoadTestOptions) =>
     api.post<LoadTestResult>(`/load-test/${id}/run`, options).then((r) => r.data),
+};
+
+export const chatApi = {
+  send: (message: string) => api.post<ChatResponse>("/chat/message", { message }).then((r) => r.data),
 };

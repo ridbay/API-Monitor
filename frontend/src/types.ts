@@ -165,3 +165,8 @@ export interface LoadTestResult {
   status_code_breakdown: Record<string, number>;
   ran_at: string;
 }
+
+export interface ChatResponse {
+  intent: string;
+  reply: string;
+}

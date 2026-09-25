@@ -3,7 +3,7 @@ import { endpointRepository } from "../repositories/endpoint.repository";
 import { monitoringResultRepository } from "../repositories/monitoringResult.repository";
 import { classifyFailure } from "./rootCause.service";
 
-const HEALTHY_AVAILABILITY_THRESHOLD = 98;
+export const HEALTHY_AVAILABILITY_THRESHOLD = 98;
 
 export const dashboardService = {
   async getSummary() {

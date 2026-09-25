@@ -9,6 +9,7 @@ import { reportRouter } from "./routes/report.routes";
 import { importRouter } from "./routes/import.routes";
 import { openapiRouter } from "./routes/openapi.routes";
 import { loadTestRouter } from "./routes/loadTest.routes";
+import { chatRouter } from "./routes/chat.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -28,6 +29,7 @@ app.use("/api/reports", reportRouter);
 app.use("/api/import", importRouter);
 app.use("/api/openapi", openapiRouter);
 app.use("/api/load-test", loadTestRouter);
+app.use("/api/chat", chatRouter);
 
 app.use(errorHandler);
 

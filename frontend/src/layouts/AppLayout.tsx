@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Activity, FileBarChart, LayoutDashboard, ListChecks, UploadCloud } from "lucide-react";
+import { Activity, FileBarChart, LayoutDashboard, ListChecks, Sparkles, UploadCloud } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true, icon: LayoutDashboard },
   { to: "/endpoints", label: "Endpoints", icon: ListChecks },
   { to: "/import", label: "Import", icon: UploadCloud },
   { to: "/reports", label: "Reports", icon: FileBarChart },
+  { to: "/assistant", label: "Assistant", icon: Sparkles },
 ];
 
 export function AppLayout() {

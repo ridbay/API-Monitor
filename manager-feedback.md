@@ -22,6 +22,6 @@ Context: feedback given after presenting the API monitoring platform.
 | 3 | Auto-detection of errors + root cause analysis | Root cause: built — [backend/src/services/rootCause.service.ts](backend/src/services/rootCause.service.ts). Auto-detection (anomaly/degradation flagging): not yet built |
 | 4 | Auto-remediation (human-in-the-loop, then automate) | Not yet built; see [prd.md](prd.md) §14.4 |
 | 5 | Microservices in pods (OpenShift/Kubernetes) | Blocked — no cluster access; see [prd.md](prd.md) §14.5 |
-| 6 | Chatbots / AI agents | Not yet built; no LLM API access approved — would be rule-based initially; see [prd.md](prd.md) §14.6 |
+| 6 | Chatbots / AI agents | Built (rule-based, no LLM access approved) — [backend/src/services/chat.service.ts](backend/src/services/chat.service.ts), [frontend/src/pages/Assistant.tsx](frontend/src/pages/Assistant.tsx); see [prd.md](prd.md) §14.6 |
 
 Full phased breakdown lives in [prd.md](prd.md) §14 ("Phase 2 Vision: AIOps Roadmap").
