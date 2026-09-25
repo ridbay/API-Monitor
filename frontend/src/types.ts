@@ -166,7 +166,16 @@ export interface LoadTestResult {
   ran_at: string;
 }
 
+export interface ChatEntity {
+  endpoint_id: number;
+  name: string;
+  status: EndpointStatus;
+  detail: string;
+}
+
 export interface ChatResponse {
   intent: string;
   reply: string;
+  entities?: ChatEntity[];
+  suggestions?: string[];
 }

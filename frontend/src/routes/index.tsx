@@ -6,7 +6,6 @@ import { EndpointNew } from "../pages/EndpointNew";
 import { EndpointDetails } from "../pages/EndpointDetails";
 import { Import } from "../pages/Import";
 import { Reports } from "../pages/Reports";
-import { Assistant } from "../pages/Assistant";
 
 export const router = createBrowserRouter([
   {
@@ -19,7 +18,6 @@ export const router = createBrowserRouter([
       { path: "endpoints/:id", element: <EndpointDetails /> },
       { path: "import", element: <Import /> },
       { path: "reports", element: <Reports /> },
-      { path: "assistant", element: <Assistant /> },
     ],
   },
 ]);

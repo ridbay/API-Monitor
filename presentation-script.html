@@ -254,7 +254,12 @@
       <div class="beat-index">02</div>
       <div class="beat-content">
         <h3>Land on the dashboard — it's already working</h3>
-        <p><span class="cue">open localhost:8088</span> "And here's the dashboard. I've already got a few real MTN endpoints registered — the MOMO API, our visitor management system, a couple more. This one's been running unattended, so this is genuinely what it looks like day to day, not a staged demo state." <span class="beat">(point at the Endpoint Health list — one entry should be red)</span> "And that one — MOMO sandbox — has actually been down for a while now. Nobody was watching it happen. It just got caught."</p>
+        <p><span class="cue">open localhost:8088</span> "And here's the dashboard. I've already got a few real MTN endpoints registered — the MOMO API, our visitor management system, a couple more. This one's been running unattended, so this is genuinely what it looks like day to day, not a staged demo state."</p>
+        <p>"Notice the live beacon in the top right — <span class="cue">point to the 'Live • auto-refresh in 15s' pill</span> — the dashboard continuously updates itself every 15 seconds, and there's a 'Run all checks now' button if we ever want to force an immediate run across everything after a deploy."</p>
+        <p>"Top cards give executive KPIs at a glance: total endpoints, healthy, failed, and global average latency. Directly underneath is a Quick Actions bar with one-click shortcuts to Add Endpoint, Import OpenAPI, and SLA Reports."</p>
+        <p>"Right in the main view, we pair the macro and micro: on the left is the Health Distribution donut. On the right — <span class="cue">point to Endpoint Health</span> — is our worst-first live health list. We brought this right to the top so whatever is failing commands attention immediately. MOMO sandbox has actually been down for hours, and it floats right to the top with its exact downtime streak. We also have live filter chips — <span class="cue">click 'Issues'</span> — to isolate degraded APIs, and a search input for filtering when monitoring dozens of services."</p>
+        <p>"And down here — <span class="cue">scroll to System Performance Trends</span> — is our 24-hour aggregate trendline. I can flip between Latency (ms) and Availability (%), or toggle between 24 hours, 7 days, and 30 days to see if system performance is drifting."</p>
+        <p>"At the bottom — <span class="cue">scroll to Recent Failures</span> — is the full-width audit log showing every failure, status code, error, and our automated root-cause classification."</p>
       </div>
     </div>
 
@@ -301,8 +306,8 @@
     <div class="beat-block">
       <div class="beat-index">08</div>
       <div class="beat-content">
-        <h3>Back to the dashboard</h3>
-        <p><span class="cue">Dashboard</span> "And now there's one more endpoint in the mix. Health distribution up here, and down here — this is the one I actually like — every endpoint, sorted worst-first on purpose, so whatever's broken floats straight to the top. That's not just a percentage, it's 'up for two hours' or 'down for forty minutes' — how long the current state has actually held. MOMO's still sitting right there at the top, exactly where it should be."</p>
+        <h3>Back to the dashboard — the new service is live</h3>
+        <p><span class="cue">Dashboard</span> "And now we're back on the dashboard. The new endpoints from the OpenAPI discovery are already incorporated into our health distribution, our trends chart, and our Endpoint Health table. Everything stays synchronized in real time without refreshing the browser."</p>
       </div>
     </div>
 
@@ -346,7 +351,7 @@
         <tr>
           <td class="layer">Data fetching</td>
           <td><span class="pill">React Query</span></td>
-          <td>Dashboard and endpoint list refresh themselves every 15 seconds, no polling code to maintain.</td>
+          <td>Dashboard and endpoint list refresh themselves every 15 seconds with live countdown indicator, no polling code to maintain.</td>
         </tr>
         <tr>
           <td class="layer">Backend</td>
@@ -357,6 +362,16 @@
           <td class="layer">Scheduler</td>
           <td><span class="pill">node-cron</span></td>
           <td>Ticks every minute, asks "who's due," fires checks in parallel — same loop for 1 endpoint or 500.</td>
+        </tr>
+        <tr>
+          <td class="layer">Root Cause Analyzer</td>
+          <td><span class="pill">Regex & Status Mapping</span></td>
+          <td>Deterministic classification engine (<code>rootCause.service.ts</code>) mapping errors to Timeout, DNS, Refusal, Reset, 5xx, or 4xx.</td>
+        </tr>
+        <tr>
+          <td class="layer">Load Testing Engine</td>
+          <td><span class="pill">Async Worker Pool</span></td>
+          <td>On-demand concurrent stress-tester (<code>loadTest.service.ts</code>) generating p50, p95, p99 percentiles without skewing SLA metrics.</td>
         </tr>
         <tr>
           <td class="layer">Database</td>
@@ -380,43 +395,48 @@
   <!-- ============ SECTION 4: ROADMAP ============ -->
   <section>
     <div class="section-head">
-      <h2>4 · Where this goes next</h2>
+      <h2>4 · Where this goes next (AIOps Roadmap)</h2>
       <span class="section-time">~1 min</span>
     </div>
-    <p class="section-lede">"This first version was scoped on purpose — here's what I'd build next, in order."</p>
+    <p class="section-lede">"This first version delivered the core monitoring, load testing, and root-cause classification. Here is our phased Phase 2 AIOps roadmap directly addressing our operational goals."</p>
 
     <div class="table-scroll">
       <table class="tech-table">
-        <tr><th>Next</th><th>What</th><th>Why it's next</th></tr>
+        <tr><th>Phase</th><th>Capability</th><th>Status / Implementation Path</th></tr>
         <tr>
-          <td class="layer">1</td>
-          <td>Alerting</td>
-          <td>Slack / email / Teams when an endpoint goes down — right now you have to be looking at the dashboard to know.</td>
+          <td class="layer">Phase 1</td>
+          <td>API Performance Engine & Bulk Testing</td>
+          <td><b style="color: var(--brand-500);">Built</b> — Integrated concurrent load testing with p50/p95/p99 percentiles & OpenAPI bulk discovery.</td>
         </tr>
         <tr>
-          <td class="layer">2</td>
-          <td>Incident grouping</td>
-          <td>Count outages, not failed checks — one 10-minute blip should read as "1 incident," not "10 failures."</td>
+          <td class="layer">Phase 1</td>
+          <td>Automated Root-Cause Classification</td>
+          <td><b style="color: var(--brand-500);">Built</b> — Pattern-based failure classifier on Dashboard & Daily Reports (Timeout, DNS, 5xx, 4xx).</td>
         </tr>
         <tr>
-          <td class="layer">3</td>
-          <td>P95 / P99 latency</td>
-          <td>Averages hide the slow tail — this is usually where the real complaints come from.</td>
+          <td class="layer">Phase 2.1</td>
+          <td>Proactive Anomaly & Degradation Detection</td>
+          <td><b>Next</b> — Statistical baseline tracking (moving average + std dev) to alert on latency creep before an outage occurs.</td>
         </tr>
         <tr>
-          <td class="layer">4</td>
-          <td>MTTR</td>
-          <td>Mean time to recover, pairs with the "down for" streak already on the dashboard.</td>
+          <td class="layer">Phase 2.2</td>
+          <td>Multi-Channel Alerting & Incident Grouping</td>
+          <td><b>Next</b> — Webhook integration (Slack / Teams / Email) with deduplication so 10 failed pings = 1 incident.</td>
         </tr>
         <tr>
-          <td class="layer">5</td>
-          <td>Auth &amp; roles</td>
-          <td>Deliberately left out of v1 — needed before this is anyone but our own team's tool.</td>
+          <td class="layer">Phase 2.3</td>
+          <td>Human-in-the-Loop Auto-Remediation</td>
+          <td><b>Roadmap</b> — Automated remediation proposals with one-click approval buttons (e.g. restart pod, flush cache).</td>
         </tr>
         <tr>
-          <td class="layer">6</td>
-          <td>Multi-region checks</td>
-          <td>Catch outages that only show up from outside our own network.</td>
+          <td class="layer">Phase 2.4</td>
+          <td>Pod & Microservice Observability</td>
+          <td><b>Roadmap</b> — Direct OpenShift & Kubernetes cluster metrics integration once cluster access is provisioned.</td>
+        </tr>
+        <tr>
+          <td class="layer">Phase 2.5</td>
+          <td>AI Ops Assistant / Chatbot</td>
+          <td><b>Roadmap</b> — Natural language Slack/Teams bot for querying service health, outage summaries, and MTTR trends.</td>
         </tr>
       </table>
     </div>
