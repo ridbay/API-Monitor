@@ -314,8 +314,19 @@
     <div class="beat-block">
       <div class="beat-index">09</div>
       <div class="beat-content">
-        <h3>Close on Reports</h3>
-        <p><span class="cue">Reports</span> "Last stop, and it's three tiers now. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking." <span class="beat">(scroll to the bottom)</span> "And down here — every outage today, service by service, with the actual error. And next to it — this is the other half of what you asked for, root-cause analysis." <span class="beat">(point at the Likely Cause column)</span> "Every failure gets auto-classified — timeout, DNS issue, connection refused, server error, client error — instead of someone reading a raw error string and guessing what it means. It's rule-based against the error patterns we already capture, not a model, so I can tell you exactly why it called each one. This is the page I'd bring to a postmortem."</p>
+        <h3>Examine Reports & Root-Cause Classification</h3>
+        <p><span class="cue">Reports</span> "Next stop is Reports — three operational tiers. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking."</p>
+        <p><span class="beat">(scroll to the bottom table)</span> "And down here — every outage today, service by service, with the actual error. And next to it — this is root-cause analysis." <span class="beat">(point at the Likely Cause column)</span> "Every failure gets auto-classified — timeout, DNS issue, connection refused, server error, client error — instead of someone reading a raw error string and guessing what it means. It's rule-based against the error patterns we already capture, not a model, so I can tell you exactly why it called each one. This is the page I'd bring to a postmortem."</p>
+      </div>
+    </div>
+
+    <div class="beat-block">
+      <div class="beat-index">10</div>
+      <div class="beat-content">
+        <h3>Ask the assistant — interactive ops chatbot</h3>
+        <p><span class="cue">click floating chat icon (bottom-right)</span> "And finally — this directly answers the last piece of your feedback: 'Add chat bots/AI agents'. We built an operational assistant right into the bottom corner of every page."</p>
+        <p><span class="cue">click 'What's down?' suggestion pill</span> "You don't even have to hunt through dashboards. Ask 'What's down?', 'Slowest APIs', or 'Outages today' — and it immediately responds with live data, uptime streaks, and direct clickable links to the failing services."</p>
+        <p>"And I want to be 100% transparent about how it works: right now, without corporate approval for external LLM APIs, this is an honest, keyword-matched engine running directly against our PostgreSQL database and root-cause classifier. No hallucinatory answers, no external data leakage. And when LLM/agent access is approved in Phase 2, this exact UI widget connects directly to our model."</p>
       </div>
     </div>
   </section>
@@ -374,6 +385,11 @@
           <td>On-demand concurrent stress-tester (<code>loadTest.service.ts</code>) generating p50, p95, p99 percentiles without skewing SLA metrics.</td>
         </tr>
         <tr>
+          <td class="layer">Chatbot Assistant</td>
+          <td><span class="pill">Keyword & Intent Router</span></td>
+          <td>Rule-based operations assistant (<code>chat.service.ts</code> + <code>ChatWidget.tsx</code>) querying monitoring telemetry with zero LLM dependency.</td>
+        </tr>
+        <tr>
           <td class="layer">Database</td>
           <td><span class="pill">PostgreSQL</span></td>
           <td>Every check ever run is a row — that history is the whole reason the charts and reports exist.</td>
@@ -398,7 +414,7 @@
       <h2>4 · Where this goes next (AIOps Roadmap)</h2>
       <span class="section-time">~1 min</span>
     </div>
-    <p class="section-lede">"This first version delivered the core monitoring, load testing, and root-cause classification. Here is our phased Phase 2 AIOps roadmap directly addressing our operational goals."</p>
+    <p class="section-lede">"This first version delivered the core monitoring, load testing, root-cause classification, and chat assistant. Here is our phased Phase 2 AIOps roadmap directly addressing our operational goals."</p>
 
     <div class="table-scroll">
       <table class="tech-table">
@@ -412,6 +428,11 @@
           <td class="layer">Phase 1</td>
           <td>Automated Root-Cause Classification</td>
           <td><b style="color: var(--brand-500);">Built</b> — Pattern-based failure classifier on Dashboard & Daily Reports (Timeout, DNS, 5xx, 4xx).</td>
+        </tr>
+        <tr>
+          <td class="layer">Phase 1</td>
+          <td>Ops Chat Assistant (Rule-Based)</td>
+          <td><b style="color: var(--brand-500);">Built</b> — Floating interactive chat widget on all pages querying live status, outages, and rankings without external LLM dependencies.</td>
         </tr>
         <tr>
           <td class="layer">Phase 2.1</td>
@@ -435,8 +456,8 @@
         </tr>
         <tr>
           <td class="layer">Phase 2.5</td>
-          <td>AI Ops Assistant / Chatbot</td>
-          <td><b>Roadmap</b> — Natural language Slack/Teams bot for querying service health, outage summaries, and MTTR trends.</td>
+          <td>LLM-Powered Agentic Assistant</td>
+          <td><b>Roadmap</b> — Connect existing chat widget to approved internal LLM for freeform root-cause summaries and remediation dialogs.</td>
         </tr>
       </table>
     </div>
