@@ -2,60 +2,88 @@
 ## Presenter Walkthrough & Conversational Talk-Track
 
 - **Audience:** Engineering Leadership / Manager, MTN Nigeria  
-- **Target Time:** ~11–12 minutes  
-- **Format:** Conversational, hands-on demo flow  
-- **Initial State:** Terminal open; Docker containers stopped (`docker compose down`).
+- **Target Time:** ~10–12 minutes  
+- **Format:** Conversational, hands-on, live demonstration  
+- **Stack:** React (Vite) + Tailwind CSS + Node.js (Express/TypeScript) + PostgreSQL + Redis + Docker Compose + Google Gemini 3.8 Flash  
+- **Initial Setup:** Terminal open; Docker stack running on `http://localhost:8088`.
 
 ---
 
-## 1. The Opening (~90 Seconds)
+## Pre-Flight Technical Checklist (30 Seconds Before Demo)
 
-> **CUE:** Hands off the keyboard. Look directly at your manager. Set the stakes before showing code or UI.
+Run these quick checks in your terminal to ensure everything is humming before you share your screen:
 
-"Before I touch the keyboard, quick context on the actual headache this solves for us.
+```bash
+# 1. Verify all 4 containers are healthy and running
+docker compose ps
 
-Right now, if someone on our team wants to know whether an internal MTN service or a partner integration—like the MOMO API—is healthy, there’s no unified place to look. We either ping it manually from a terminal, write a quick throwaway script, or worst of all, we find out it’s degraded when a customer or dependent team calls in to complain. There's no shared history, no live dashboard, and no proactive warning that an API has been slipping for the past three days.
+# 2. Check that the frontend is accessible
+curl -I http://localhost:8088
 
-That's the exact gap this closes. It's an **automated synthetic monitoring platform**. You register an endpoint once, and our background engine tests it continuously—every minute, every 15 minutes, or whatever schedule you decide. It records response times, tracks uptime percentages, captures HTTP status codes, and surfaces everything onto a live dashboard.
+# 3. Quick test of the AI Assistant backend route
+curl -s -X POST http://localhost:4001/api/chat/message \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is down?"}' | grep "reply"
+```
 
-And deployment is completely zero-friction: the entire stack—database, cache, API engine, and web interface—runs in **four lightweight Docker containers** brought up with a single command. Nothing proprietary to license, no cloud dependencies, and nothing that needs its own infrastructure ticket.
+> **Pro Tip:** Keep a clean terminal tab open with `docker compose logs -f backend` hidden behind your browser. If your manager asks *"How do you know it actually pinged the network?"*, you can flick to that tab and show real-time cron check logs firing.
+
+---
+
+## 1. The Opening Hook (~90 Seconds)
+
+> **CUE:** Hands completely off the keyboard. Look directly at your manager. Establish the real-world operational pain point before touching any UI.
+
+"Before I touch the keyboard, quick context on the actual headache this solves for us across engineering.
+
+Right now, if anyone on our team wants to know whether an internal MTN service or an external partner integration—like the MOMO API—is healthy, there’s no unified place to look. We either ping it manually from a terminal, write a quick throwaway curl script, or worst of all, we find out it’s degraded when a customer or a dependent team calls in to complain. There's no shared history, no live dashboard, and no proactive warning that an API has been slipping for the past three days.
+
+That's the exact gap this closes. It's an **automated synthetic monitoring and performance testing platform**. You register an endpoint once, and our background engine tests it continuously—every minute, every 15 minutes, or whatever schedule you decide. It records response times, tracks uptime percentages, captures HTTP status codes, classifies failure root causes, and surfaces everything onto a live dashboard.
+
+And deployment is completely zero-friction: the entire stack—database, cache, API engine, background workers, and web interface—runs in **four lightweight Docker containers** brought up with a single command. Nothing proprietary to license, no cloud vendor lock-in, and nothing that needs its own infrastructure ticket.
 
 Let me just show you live—it’s much faster than explaining it."
 
 ---
 
-## 2. The 10-Beat Live Walkthrough
+## 2. The 10-Beat Live Walkthrough Flow
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│  Beat 01: Docker Up → Beat 02: Dashboard & Telemetry → Beat 03: Add API│
-│  Beat 04: Check ↻   → Beat 05: Detail & Latency Trends → Beat 06: Load │
-│  Beat 07: OpenAPI 40x → Beat 08: Live Sync → Beat 09: Root Cause Reports│
-│  Beat 10: Interactive Ops Chatbot Assistant                            │
-└────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ Beat 01: Docker Zero-Friction Spin-up                                                  │
+│ Beat 02: The Re-Architected Dashboard (Worst-First Triage & Performance Trends)        │
+│ Beat 03: Register an Endpoint Live (Zero-Config Onboarding)                            │
+│ Beat 04: Trigger an Instant Out-of-Band Synthetic Check (↻)                           │
+│ Beat 05: Deep Telemetry & Time-Series History (24h / 7d / 30d)                         │
+│ Beat 06: On-Demand API Load Testing Engine (p50 / p95 / p99 Percentiles)               │
+│ Beat 07: Enterprise Scale Ingestion (OpenAPI / Swagger Discovery & CSV)                │
+│ Beat 08: Live Fleet Synchronization (Zero Page Reload)                                 │
+│ Beat 09: Multi-Tier Reports & Automated Root-Cause Classification                     │
+│ Beat 10: Interactive AI Operations Assistant & Decision Layer (Gemini Function Calls)  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Beat 01 · Bring Up the Whole Stack
+### Beat 01 · Zero-Friction Spin-Up
 
-> **CUE:** In terminal: `docker compose up -d`
+> **CUE:** Point at terminal (or run `docker compose up -d`).
 
 "Before anything else—this is the entire deployment. 
 
-Postgres, Redis, our Express API with the background scheduler, and the Nginx frontend. Four containers, one command. That’s it. Nothing else to install anywhere on any server or VM that has Docker."
+Postgres for persistent time-series storage, Redis for telemetry caching, our Express API with the background parallel scheduler, and the Nginx frontend. Four containers, one command. That’s it. Nothing else to install anywhere on any server or internal VM that has Docker."
 
 ---
 
-### Beat 02 · Land on the Dashboard
+### Beat 02 · Land on the Dashboard (Worst-First Triage)
 
 > **CUE:** Switch to browser and open `http://localhost:8088`.
 
-"And here’s the dashboard. I've already got a few real MTN endpoints registered—the MOMO API, our visitor management system, GitHub, CoinCap, and a couple more. This has been running unattended, so this is genuinely what it looks like day-to-day, not a staged demo state.
+"And here’s the dashboard. I've already got real MTN endpoints registered—the MOMO API, our visitor management system, GitHub, CoinCap, and others. This has been running unattended, so this is genuinely what it looks like day-to-day, not a staged demo state.
 
 Let me walk you through the controls:
 
-1. **Live Beacon & Telemetry (Top Right):**  
+1. **Live Beacon & Instant Sweep (Top Right):**  
    Notice that little green pulsing beacon in the top right—*Live • auto-refresh in 15s*. The dashboard continuously updates itself every 15 seconds. If a team just pushed a hotfix and wants to verify immediately, clicking **'Run all checks now'** sweeps across every single endpoint in parallel without waiting for the next timer.
 
 2. **Executive Summary Cards (Top Row):**  
@@ -64,11 +92,11 @@ Let me walk you through the controls:
 3. **Quick Actions Bar:**  
    Directly underneath is our Quick Actions bar—one-click shortcuts to Add Endpoint, Import OpenAPI specs, or jump straight to SLA Reports without hunting through navigation menus.
 
-4. **Health Distribution & Endpoint Health (Upper Grid):**  
-   > **CUE:** Point at the pie chart on the left, then at the Endpoint Health list on the right.  
-   We pair the macro view with the micro breakdown:
+4. **Macro vs. Micro: Health Distribution & Endpoint Health (Upper Grid):**  
+   > **CUE:** Point at the donut chart on the left, then at the Endpoint Health list on the right.  
+   We pair the macro view with the micro breakdown side-by-side:
    - On the left is our Health Distribution donut chart—healthy, warning, down.
-   - On the right is **Endpoint Health**. We deliberately brought this right to the top because it sorts **worst-first**. Whatever is broken floats straight to the top. Look at MOMO sandbox right there in red—it has been down for days, and the platform caught it unattended. It shows the exact streak—*Down for 8d 20h*—along with its availability percentage.
+   - On the right is **Endpoint Health**. We deliberately brought this right to the top because it sorts **worst-first**. Whatever is broken commands attention immediately. Look at MOMO right there at the top in red—it has been down, and the platform caught it unattended. It shows the exact streak—*Down for 13d 21h*—along with its availability percentage.
    - We also have interactive filter chips: clicking **'Issues'** instantly filters down to failing or degraded services, and the search bar filters services in real time when you're managing dozens of APIs.
 
 5. **System Performance Trends (Area Chart):**  
@@ -77,7 +105,7 @@ Let me walk you through the controls:
 
 6. **Recent Failures (Bottom Full-Width Log):**  
    > **CUE:** Scroll to the bottom table.  
-   And down at the bottom is our audit log. Every failure captures the exact timestamp, status code, and error details. Notice that last column: **Likely Cause**—we automatically classify the failure into Timeout, DNS resolution failure, Connection Refused, or Server 5xx. More on that in a minute."
+   And down at the bottom is our audit log. Every failure captures the exact timestamp, status code, latency, and error details. Notice that last column: **Likely Cause**—we automatically classify the failure into Timeout, DNS resolution failure, Connection Refused, or Server 5xx. More on that in a minute."
 
 ---
 
@@ -93,7 +121,7 @@ That’s the entire onboarding flow. No code changes, no configuration YAML file
 
 ---
 
-### Beat 04 · Trigger an Instant Check
+### Beat 04 · Trigger an Instant Out-of-Band Synthetic Check
 
 > **CUE:** In the Endpoints table, click the `↻` icon next to the new endpoint row.
 
@@ -116,7 +144,7 @@ You get:
 
 ---
 
-### Beat 06 · On-Demand Load Testing Engine
+### Beat 06 · On-Demand API Load Testing Engine
 
 > **CUE:** Scroll down to the **Load Test** section. Set concurrency to `5`, requests to `20`, and click **Run Load Test**.
 
@@ -139,7 +167,7 @@ And here’s an important architectural design choice: **load test bursts are st
 "Now, onboarding one endpoint is easy. But what happens when an engineering squad hands us a microservice with forty different routes?
 
 Nobody wants to type forty rows into a web form. So we built two bulk onboarding methods:
-1. Standard CSV import with a live preview.
+1. Standard CSV import with a live preview and validation table.
 2. **OpenAPI / Swagger Auto-Discovery:** point it at any team’s Swagger JSON URL, hit **Discover**, and every single route in the spec populates with checkboxes. Select the routes you care about, hit Import, and all forty are monitored in one click."
 
 ---
@@ -192,9 +220,9 @@ Let me show you how this is different from a simple search box:
    - *'Give me a fleet summary'*  
    It queries our database in real time, lists the affected services, their current downtime streak, and provides direct clickable links to the endpoint details.
 
-2. **Multi-Turn Context & Autonomous Tool Actions:**
-   > **CUE:** Type: *'Is MOMO API up?'* wait for reply, then type: *'Run a check on it'* (or *'Run a load test on it'*).  
-   Notice that it understands follow-ups. When I ask *'Is MOMO API up?'*, it checks the status. When I follow up with *'Run a check on it'*, the assistant recognizes 'it' refers to MOMO, invokes our backend **function-calling tool**, executes an immediate synthetic check over the network, and reports the live response time and status code right in the chat.
+2. **Multi-Turn Context & Autonomous Tool Actions (Human-in-the-Loop Decision Layer):**
+   > **CUE:** Type: *'Is MOMO up?'* wait for reply, then type: *'Run a check on it'*.  
+   Notice that it understands follow-ups. When I ask *'Is MOMO up?'*, it checks the status. When I follow up with *'Run a check on it'*, the assistant recognizes 'it' refers to MOMO, invokes our backend **function-calling tool**, executes an immediate synthetic check over the network, and reports the live response time and status code right in the chat.
    
    It has real operational tools:
    - Trigger instant checks (`run_check`)
@@ -213,6 +241,39 @@ Let me show you how this is different from a simple search box:
 ## 3. Under the Hood (~2 Minutes)
 
 "For anyone curious about how this is actually engineered:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND (Nginx :8088)                                    │
+│  React 18 + TypeScript + Tailwind CSS v4 + Recharts + React Query (15s Polling Beacon) │
+│  Global Floating AI ChatWidget with Multi-Turn Memory & Suggestion Pills               │
+└──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                           │  REST API calls (/api/*)
+                                           ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                               BACKEND (Node.js :4001)                                  │
+│  Express + TypeScript + Zod Runtime Schema Validation                                  │
+│                                                                                        │
+│  ┌───────────────────────┐  ┌─────────────────────────┐  ┌───────────────────────────┐ │
+│  │ node-cron Scheduler   │  │ Load Testing Engine     │  │ Root Cause Classifier     │ │
+│  │ (Parallel cron ticks) │  │ (Async worker pool,     │  │ (Regex & status matcher,  │ │
+│  │                       │  │  p50/p95/p99 latency)   │  │  Timeout, DNS, 5xx, 4xx)  │ │
+│  └───────────────────────┘  └─────────────────────────┘  └───────────────────────────┘ │
+│                                                                                        │
+│  ┌───────────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Hybrid Operations Chat Engine:                                                    │ │
+│  │ • Primary: Google Gemini 3.8 Flash with structured Tool Calling (chatTools.ts)    │ │
+│  │ • Fallback: Deterministic Regex & SQL intent router (chat.service.ts)             │ │
+│  └───────────────────────────────────────────────────────────────────────────────────┘ │
+└───────────────────────────┬───────────────────────────────┬────────────────────────────┘
+                            │                               │
+                            ▼                               ▼
+       ┌───────────────────────────────┐       ┌──────────────────────────────┐
+       │     PostgreSQL Database       │       │         Redis Cache          │
+       │ Time-series check persistence │       │ 30-second TTL summary cache  │
+       │ Immutable check history & SLA │       │ Fast dashboard aggregations  │
+       └───────────────────────────────┘       └──────────────────────────────┘
+```
 
 - **Frontend:** Built with React, TypeScript, Tailwind CSS, and Recharts. Live telemetry is managed by React Query with a 15-second polling loop and intelligent cache invalidation. A global floating `ChatWidget` is accessible across all views.
 - **Backend:** Node.js Express in TypeScript with strict Zod validation on every route.
@@ -242,7 +303,28 @@ Here is how every single item from the feedback session is addressed:
 
 ---
 
-## 5. The Closing Punchline
+## 5. Presenter Cheat Sheet: Handling Tough Questions
+
+Here are ready answers for the 5 most likely engineering and architectural questions:
+
+### Q1: "What happens if Gemini runs out of API quota, or the network drops?"
+> **Answer:** "The system is built as a resilient hybrid. In `chat.controller.ts`, if the Gemini API key is missing or an external API error occurs, it catches the error and immediately falls back to our local, pattern-matched engine (`chat.service.ts`). The user experiences zero crash, zero 500 error, and still gets accurate telemetry directly from PostgreSQL."
+
+### Q2: "Can this monitor internal microservices running inside private OpenShift or Kubernetes clusters?"
+> **Answer:** "Yes. Because the backend container runs inside Docker, it shares the container host's network namespace or internal DNS. Any service addressable from that network—whether via internal Kubernetes service DNS (e.g. `http://momo-service.default.svc.cluster.local:8080`) or internal IP—can be probed synthetically. Phase 2.3 extends this to pull native pod metrics (CPU, restarts, memory) directly from the K8s API."
+
+### Q3: "Does running an on-demand load test skew our official uptime or SLA reports?"
+> **Answer:** "No, we deliberately designed an architectural boundary between them. Scheduled synthetic checks write to the `checks` table, which drives the SLA and uptime metrics. On-demand load tests execute in `loadTest.service.ts` in memory and return directly to the caller without inserting synthetic check rows into the database."
+
+### Q4: "How does this platform scale when we add hundreds of endpoints?"
+> **Answer:** "The cron worker queries for endpoints due for checks and dispatches them concurrently using an asynchronous worker pool. On the query side, our dashboard aggregations are fronted by Redis with a 30-second TTL. Even if 50 engineers have the dashboard open with 15-second polling, Postgres only sees one aggregate query every 30 seconds."
+
+### Q5: "Why not just use Datadog, Dynatrace, or Prometheus?"
+> **Answer:** "Those are excellent APM tools for deep code profiling and host metrics, but they have major gaps: they are expensive per host, require agent installations inside production code, and don't provide external synthetic black-box verification. This platform gives us an internal, zero-license, black-box synthetic monitoring layer that tests our endpoints exactly how our customers and partner apps experience them."
+
+---
+
+## 6. The Closing Punchline (~30 Seconds)
 
 > **CUE:** Close your laptop or turn back to your manager.
 

@@ -20,8 +20,8 @@ Context: feedback given after presenting the API monitoring platform.
 | 1 | API performance testing engine, concurrent bulk requests | Built — [backend/src/services/loadTest.service.ts](backend/src/services/loadTest.service.ts) |
 | 2 | Monitor internal MTN services, pods, observability | Blocked — no OpenShift/Kubernetes cluster access; see [prd.md](prd.md) §14.2 |
 | 3 | Auto-detection of errors + root cause analysis | Root cause: built — [backend/src/services/rootCause.service.ts](backend/src/services/rootCause.service.ts). Auto-detection (anomaly/degradation flagging): not yet built |
-| 4 | Auto-remediation (human-in-the-loop, then automate) | Not yet built; see [prd.md](prd.md) §14.4 |
+| 4 | Auto-remediation (human-in-the-loop, then automate) | Decision layer built (v1) — Assistant triggers live checks, load tests, pauses, and registrations upon human conversational command; auto-remediation roadmap in [prd.md](prd.md) §14.4 |
 | 5 | Microservices in pods (OpenShift/Kubernetes) | Blocked — no cluster access; see [prd.md](prd.md) §14.5 |
-| 6 | Chatbots / AI agents | Built (rule-based, no LLM access approved) — [backend/src/services/chat.service.ts](backend/src/services/chat.service.ts), [frontend/src/pages/Assistant.tsx](frontend/src/pages/Assistant.tsx); see [prd.md](prd.md) §14.6 |
+| 6 | Chatbots / AI agents | Built (v1 Hybrid) — Google Gemini 3.8 Flash with tool calling ([backend/src/services/llmChatGemini.service.ts](backend/src/services/llmChatGemini.service.ts)), deterministic fallback ([backend/src/services/chat.service.ts](backend/src/services/chat.service.ts)), floating [frontend/src/components/ChatWidget.tsx](frontend/src/components/ChatWidget.tsx); see [prd.md](prd.md) §14.6 |
 
 Full phased breakdown lives in [prd.md](prd.md) §14 ("Phase 2 Vision: AIOps Roadmap").
