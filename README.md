@@ -44,7 +44,12 @@
 
 ## 🏗 System Architecture
 
-### Component Architecture Diagram (Mermaid)
+### Component Architecture Diagram
+
+![API Monitor System Architecture](rid/architecture-diagram.svg)
+
+<details>
+<summary><b>📐 View Mermaid Source Definition</b></summary>
 
 ```mermaid
 flowchart TD
@@ -89,6 +94,8 @@ flowchart TD
 
     API -->|Fetch & Parse| SWAG
 ```
+
+</details>
 
 ### Logical Data Flow Diagram (ASCII)
 
