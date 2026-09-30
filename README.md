@@ -14,6 +14,7 @@
 ---
 
 ## 📑 Table of Contents
+
 - [Executive Overview](#-executive-overview)
 - [System Architecture](#-system-architecture)
 - [List of Delivered Features](#-list-of-delivered-features)
@@ -34,6 +35,7 @@
 ## 🎯 Executive Overview
 
 **API Monitor** is an enterprise-grade synthetic monitoring and operational decision platform. Designed to provide instant visibility into API health without requiring application-side SDK instrumentation, it provides:
+
 - **Zero-touch Black-Box Synthetic Probing:** Continuously verifies endpoints across internal networks, microservices, and third-party APIs.
 - **Bulk & Automated Discovery:** Seamlessly onboards APIs manually, via batch CSV upload, or through direct Swagger / OpenAPI v2 & v3 specification discovery.
 - **On-Demand Performance Testing:** High-concurrency load testing engine computing real-time latency percentiles ($p50, p95, p99$) and throughput metrics.
@@ -47,50 +49,6 @@
 ### Component Architecture Diagram
 
 ![API Monitor System Architecture](rid/architecture-diagram.png)
-
-```mermaid
-flowchart TD
-    UI["React 18 Dashboard (Port 8088)"]
-    CW["Floating AIOps ChatWidget"]
-    NGINX["Nginx Gateway (:8088)"]
-
-    API["Express REST API (:4001)"]
-    SCHED["node-cron Scheduler"]
-    LOAD["Load Testing Engine"]
-    RCA["Root Cause Classifier"]
-    GEMINI["Google Gemini 3.8 Flash Agent"]
-    FALLBACK["Deterministic Pattern Fallback"]
-
-    PG[("PostgreSQL 15 (:5434)")]
-    REDIS[("Redis 7 Cache (:6379)")]
-
-    EXT["External Public APIs"]
-    INT["Internal Microservices (VMS)"]
-    SWAG["OpenAPI / Swagger Specs"]
-
-    UI --> NGINX
-    CW --> NGINX
-    NGINX -->|Reverse Proxy /api| API
-
-    API --> PG
-    API --> REDIS
-    API --> LOAD
-    API --> RCA
-    API --> GEMINI
-    API --> FALLBACK
-
-    GEMINI -.->|Autonomous Tool Call| SCHED
-    GEMINI -.->|Autonomous Tool Call| LOAD
-
-    SCHED -->|Record Synthetic Checks| PG
-    SCHED -->|Health Checks| EXT
-    SCHED -->|Health Checks| INT
-
-    LOAD -->|Concurrent Bursts| EXT
-    LOAD -->|Concurrent Bursts| INT
-
-    API -->|Fetch & Parse| SWAG
-```
 
 ### Logical Data Flow Diagram (ASCII)
 
@@ -139,6 +97,7 @@ flowchart TD
 ## ✨ List of Delivered Features
 
 ### 1. 📊 Universal Real-Time Monitoring & Telemetry
+
 - **15-Second Polling Beacon:** React Query auto-refreshes fleet metrics without jarring page reloads.
 - **Fleet Health Breakdown:** Live distribution cards displaying Healthy ($2xx$), Degraded (slow response or flaky), and Down ($5xx$, timeouts, unreachable).
 - **Latency & Availability Trends:** Interactive Recharts visualizer plotting response time trends, status code distributions, and percentiles.
@@ -146,16 +105,19 @@ flowchart TD
 - **Streak & SLA Tracking:** Consecutive uptime/downtime streak counters to differentiate transient blips from prolonged outages.
 
 ### 2. 🚀 Automated Onboarding & Swagger/OpenAPI Auto-Discovery
+
 - **Interactive Manual Onboarding:** Add endpoints with custom HTTP methods (GET, POST, PUT, DELETE, PATCH), custom headers, authentication tokens, timeout thresholds, and check intervals.
 - **CSV Bulk Import:** Bulk onboard dozens of endpoints with a single file upload with field mapping and validation.
 - **OpenAPI / Swagger Auto-Discovery:** Input a Swagger URL (e.g., `petstore.swagger.io/v2/swagger.json`); the parser discovers all paths, extracts methods, parameters, and descriptions, and lets operators select and import endpoints with a single click.
 
 ### 3. ⚡ High-Concurrency API Load Testing Engine
+
 - **Configurable Load Profiles:** Run concurrent bursts (e.g., 5 to 50 concurrent requests across 50 to 500 total iterations) against any registered endpoint.
 - **Percentile Telemetry:** Computes real-time latency percentiles ($p50, p95, p99$), min/max/average latency, requests per second (RPS), and error rates.
 - **SLA Isolation:** Load testing executions run in an isolated in-memory worker pool (`loadTest.service.ts`) without injecting synthetic check records into the historical database, preventing SLA report pollution.
 
 ### 4. 🔍 Automated Root-Cause Analysis (RCA)
+
 - **Deterministic Pattern Matching:** Evaluates raw network error codes and status codes against an established heuristic matrix (`rootCause.service.ts`):
   - `Timeout`: Exceeded configured timeout window.
   - `DNS`: Hostname resolution failure (`ENOTFOUND`, `EAI_AGAIN`).
@@ -165,7 +127,8 @@ flowchart TD
 - **Postmortem-Ready Reporting:** Incident logs directly present the identified cause alongside the exact error snippet.
 
 ### 5. 🤖 Hybrid AIOps Chat Assistant with Operational Function Calling
-- **Multi-Turn Context:** Retains conversational history across inquiries (e.g., *"Is MOMO API up?"* followed by *"Run a check on it"*).
+
+- **Multi-Turn Context:** Retains conversational history across inquiries (e.g., _"Is MOMO API up?"_ followed by _"Run a check on it"_).
 - **Autonomous Tool Calling:** Powered by Google Gemini 3.8 Flash using structured tool definitions (`chatTools.ts`):
   - `run_check`: Triggers an immediate synthetic check over the network.
   - `run_load_test`: Dispatches on-demand concurrent performance testing.
@@ -175,6 +138,7 @@ flowchart TD
 - **Zero-Dependency Fallback:** If the external Gemini API is unconfigured, unreachable, or hits rate limits, the platform seamlessly falls back to an internal deterministic pattern engine (`chat.service.ts`). Zero crashes, zero token cost, and fully functional in air-gapped environments.
 
 ### 6. 📈 Multi-Tier Operational Reports
+
 - **Daily 24-Hour Rollups:** Fleet availability, average response time, total requests executed, and failure counts.
 - **Weekly 7-Day Performance:** Fastest, slowest, least stable, and top availability services side by side.
 - **30-Day Executive Summary:** Total services monitored, overall fleet uptime percentage, total distinct incidents, and current degraded count.
@@ -186,64 +150,70 @@ flowchart TD
 
 This platform directly satisfies the feedback provided during the initial presentation review:
 
-| # | Feedback Point | Status | Implementation Details |
-|---|---|---|---|
-| **1** | **API performance testing engine, concurrent bulk requests** | **Built** | Fully delivered via `loadTest.service.ts` and UI Load Test Modal. Provides concurrent worker pools, $p50/p95/p99$ percentiles, and RPS metrics. Accessible via UI and AI chat. |
+| #     | Feedback Point                                                 | Status                    | Implementation Details                                                                                                                                                                                                                                                |
+| ----- | -------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **API performance testing engine, concurrent bulk requests**   | **Built**                 | Fully delivered via `loadTest.service.ts` and UI Load Test Modal. Provides concurrent worker pools, $p50/p95/p99$ percentiles, and RPS metrics. Accessible via UI and AI chat.                                                                                        |
 | **2** | **Monitor internal tools, microservices, pods, observability** | **Operational / Roadmap** | **Operational:** Probes any internal microservice endpoint reachable over the network (e.g., internal VMS service).<br>**Roadmap:** Direct cluster pod metrics (CPU/Memory/CrashLoops) require OpenShift/K8s credentials (tracked in [rid/prd.md](rid/prd.md) §14.2). |
-| **3** | **Auto-detection of errors + root cause analysis** | **Built** | `rootCause.service.ts` auto-classifies network errors and status codes into Timeout, DNS, Connection Refused, and 5xx. Displayed on Dashboard and Reports views. |
-| **4** | **Auto-remediation (Human in the loop, then automate)** | **Built (v1)** | Conversational decision layer: The AI assistant triggers instant synthetic checks, launches load tests, pauses/resumes endpoints, and updates intervals upon human confirmation. |
-| **5** | **Microservices in pods (OpenShift / Kubernetes)** | **Architecture Ready** | The system is fully containerized into discrete services (Nginx, Express, Postgres, Redis). Ready for Kubernetes/OpenShift Helm or pod deployment once cluster namespace access is provisioned. |
-| **6** | **Chatbots / AI agents** | **Built (Hybrid)** | Integrated floating `ChatWidget` with Gemini 3.8 Flash tool calling (`llmChatGemini.service.ts`) and deterministic local fallback (`chat.service.ts`). |
+| **3** | **Auto-detection of errors + root cause analysis**             | **Built**                 | `rootCause.service.ts` auto-classifies network errors and status codes into Timeout, DNS, Connection Refused, and 5xx. Displayed on Dashboard and Reports views.                                                                                                      |
+| **4** | **Auto-remediation (Human in the loop, then automate)**        | **Built (v1)**            | Conversational decision layer: The AI assistant triggers instant synthetic checks, launches load tests, pauses/resumes endpoints, and updates intervals upon human confirmation.                                                                                      |
+| **5** | **Microservices in pods (OpenShift / Kubernetes)**             | **Architecture Ready**    | The system is fully containerized into discrete services (Nginx, Express, Postgres, Redis). Ready for Kubernetes/OpenShift Helm or pod deployment once cluster namespace access is provisioned.                                                                       |
+| **6** | **Chatbots / AI agents**                                       | **Built (Hybrid)**        | Integrated floating `ChatWidget` with Gemini 3.8 Flash tool calling (`llmChatGemini.service.ts`) and deterministic local fallback (`chat.service.ts`).                                                                                                                |
 
 ---
 
 ## 💻 Technology Stack
 
-| Layer | Technologies | Role in System |
-|---|---|---|
-| **Frontend** | React 18, TypeScript, Tailwind CSS v4, Lucide Icons | Responsive SPA, status indicators, and operational interface |
-| **State & Data** | React Query (`@tanstack/react-query`), Axios | 15s background polling, cache invalidation, and REST communication |
-| **Visualizations** | Recharts | Dynamic response time area charts and health distribution donuts |
-| **API Gateway** | Nginx (Alpine) | Production static asset server & reverse proxy (`/api/*` $\to$ backend) |
-| **Backend Core** | Node.js, Express, TypeScript | Modular REST API service with Zod schema validation |
-| **Scheduler** | `node-cron` | Asynchronous parallel scheduler for synthetic endpoint checks |
-| **Performance** | Custom asynchronous worker pool | In-memory concurrent request dispatcher with percentile calculations |
-| **AI / AIOps** | Google Gemini 3.8 Flash (`@google/genai`) | Multi-turn reasoning with strict JSON schema tool calling |
-| **Persistence** | PostgreSQL 15 | Time-series check storage, endpoints registry, and incident history |
-| **Caching** | Redis 7 (Alpine) | 30s TTL cache on dashboard summaries to protect database under load |
-| **Orchestration** | Docker & Docker Compose | Multi-container reproducible runtime environment |
+| Layer              | Technologies                                        | Role in System                                                          |
+| ------------------ | --------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Frontend**       | React 18, TypeScript, Tailwind CSS v4, Lucide Icons | Responsive SPA, status indicators, and operational interface            |
+| **State & Data**   | React Query (`@tanstack/react-query`), Axios        | 15s background polling, cache invalidation, and REST communication      |
+| **Visualizations** | Recharts                                            | Dynamic response time area charts and health distribution donuts        |
+| **API Gateway**    | Nginx (Alpine)                                      | Production static asset server & reverse proxy (`/api/*` $\to$ backend) |
+| **Backend Core**   | Node.js, Express, TypeScript                        | Modular REST API service with Zod schema validation                     |
+| **Scheduler**      | `node-cron`                                         | Asynchronous parallel scheduler for synthetic endpoint checks           |
+| **Performance**    | Custom asynchronous worker pool                     | In-memory concurrent request dispatcher with percentile calculations    |
+| **AI / AIOps**     | Google Gemini 3.8 Flash (`@google/genai`)           | Multi-turn reasoning with strict JSON schema tool calling               |
+| **Persistence**    | PostgreSQL 15                                       | Time-series check storage, endpoints registry, and incident history     |
+| **Caching**        | Redis 7 (Alpine)                                    | 30s TTL cache on dashboard summaries to protect database under load     |
+| **Orchestration**  | Docker & Docker Compose                             | Multi-container reproducible runtime environment                        |
 
 ---
 
 ## 🚀 Quick Start & Deployment
 
 ### Prerequisites
+
 - [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/)
 - [Git](https://git-scm.com/)
-- *(Optional for local dev)*: Node.js 18+ and npm
+- _(Optional for local dev)_: Node.js 18+ and npm
 
 ---
 
 ### Option 1: Docker Compose Deployment (Recommended)
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/ridbay/API-Monitor.git
    cd API-Monitor
    ```
 
 2. **Configure environment variables (Optional):**
+
    ```bash
    cp backend/.env.example backend/.env
    ```
-   *(Optional: Add your `GEMINI_API_KEY` to `backend/.env`. If omitted, the AI assistant automatically runs in deterministic offline fallback mode).*
+
+   _(Optional: Add your `GEMINI_API_KEY` to `backend/.env`. If omitted, the AI assistant automatically runs in deterministic offline fallback mode)._
 
 3. **Start the platform:**
+
    ```bash
    docker compose up -d --build
    ```
 
 4. **Verify container health:**
+
    ```bash
    docker compose ps
    ```
@@ -255,10 +225,12 @@ This platform directly satisfies the feedback provided during the initial presen
    - ⚡ **Redis Host Port:** `localhost:6379`
 
 > **Note on Port Allocations:**
+>
 > - Frontend is mapped to **8088** on the host to avoid collisions with local Vite dev servers on port 5173.
 > - PostgreSQL is mapped to **5434** on the host to prevent conflicts with local Postgres instances running on port 5432.
 
 6. **View logs or stop services:**
+
    ```bash
    # Follow logs across all services
    docker compose logs -f
@@ -277,9 +249,11 @@ This platform directly satisfies the feedback provided during the initial presen
 If running directly on the host machine without Docker:
 
 #### 1. Start Postgres & Redis
+
 Ensure PostgreSQL is running on port `5434` (or update `.env`) and Redis is running on port `6379`.
 
 #### 2. Backend Setup
+
 ```bash
 cd backend
 npm install
@@ -289,6 +263,7 @@ npm run dev        # Starts Express server on http://localhost:4001
 ```
 
 #### 3. Frontend Setup
+
 ```bash
 cd frontend
 npm install
@@ -301,12 +276,12 @@ npm run dev        # Starts Vite dev server on http://localhost:5173
 
 The backend service is configured via `backend/.env`:
 
-| Variable | Default Value | Description |
-|---|---|---|
-| `PORT` | `4001` | Port on which the Express API server listens |
-| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5434/api_monitoring` | PostgreSQL connection string |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL for summary caching |
-| `GEMINI_API_KEY` | *(Optional)* | Google AI Studio API Key for Gemini 3.8 Flash agent. If empty, runs deterministic fallback. |
+| Variable         | Default Value                                                | Description                                                                                 |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `PORT`           | `4001`                                                       | Port on which the Express API server listens                                                |
+| `DATABASE_URL`   | `postgres://postgres:postgres@localhost:5434/api_monitoring` | PostgreSQL connection string                                                                |
+| `REDIS_URL`      | `redis://localhost:6379`                                     | Redis connection URL for summary caching                                                    |
+| `GEMINI_API_KEY` | _(Optional)_                                                 | Google AI Studio API Key for Gemini 3.8 Flash agent. If empty, runs deterministic fallback. |
 
 ---
 
@@ -315,6 +290,7 @@ The backend service is configured via `backend/.env`:
 To verify or audit raw metrics directly inside the Docker containers:
 
 ### Inspecting PostgreSQL
+
 ```bash
 # Open interactive psql shell
 docker compose exec postgres psql -U postgres -d api_monitoring
@@ -322,12 +298,13 @@ docker compose exec postgres psql -U postgres -d api_monitoring
 # Useful psql commands:
 \dt                                                               # List all tables
 SELECT id, name, url, method, interval_seconds FROM endpoints;    # View registered APIs
-SELECT endpoint_id, status_code, response_time_ms, success, created_at 
+SELECT endpoint_id, status_code, response_time_ms, success, created_at
 FROM monitoring_results ORDER BY created_at DESC LIMIT 10;        # View recent checks
 \q                                                                # Exit
 ```
 
 ### Inspecting Redis Cache
+
 ```bash
 # Open interactive redis-cli
 docker compose exec redis redis-cli
