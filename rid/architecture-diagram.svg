@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" width="100%" height="100%" style="background:#0b1120; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="clientGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="gatewayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="backendGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#3730a3" />
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="targetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#581c87" />
+      <stop offset="100%" stop-color="#3b0764" />
+    </linearGradient>
+
+    <!-- Markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#c084fc" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24" />
+    </marker>
+
+    <!-- Filter for soft drop shadow -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Title Badge -->
+  <text x="500" y="36" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700" letter-spacing="0.5">🛰️ API MONITOR — SYSTEM ARCHITECTURE</text>
+  <text x="500" y="56" text-anchor="middle" fill="#94a3b8" font-size="12">High-Throughput Synthetic Monitoring • Load Testing Engine • Hybrid AIOps Assistant</text>
+
+  <!-- ==================== 1. CLIENT LAYER ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="75" width="430" height="95" rx="10" fill="url(#cardGrad)" stroke="#0284c7" stroke-width="1.5" />
+    <rect x="40" y="75" width="430" height="26" rx="10" fill="#0369a1" />
+    <rect x="40" y="90" width="430" height="11" fill="#0369a1" />
+    <text x="55" y="93" fill="#ffffff" font-size="12" font-weight="700">1. CLIENT LAYER (Browser • Host Port 8088)</text>
+
+    <!-- Sub components inside Client -->
+    <rect x="55" y="110" width="185" height="46" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1" />
+    <text x="65" y="128" fill="#e2e8f0" font-size="11" font-weight="600">React 18 SPA + Tailwind v4</text>
+    <text x="65" y="145" fill="#94a3b8" font-size="10">Telemetry Beacon (15s Poll)</text>
+
+    <rect x="255" y="110" width="200" height="46" rx="6" fill="#1e293b" stroke="#a78bfa" stroke-width="1" />
+    <text x="265" y="128" fill="#e2e8f0" font-size="11" font-weight="600">Floating AIOps ChatWidget</text>
+    <text x="265" y="145" fill="#c4b5fd" font-size="10">Multi-Turn + Suggestion Pills</text>
+  </g>
+
+  <!-- ==================== 2. REVERSE PROXY ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="530" y="75" width="430" height="95" rx="10" fill="url(#cardGrad)" stroke="#475569" stroke-width="1.5" />
+    <rect x="530" y="75" width="430" height="26" rx="10" fill="#334155" />
+    <rect x="530" y="90" width="430" height="11" fill="#334155" />
+    <text x="545" y="93" fill="#ffffff" font-size="12" font-weight="700">2. GATEWAY &amp; PROXY (Nginx Container • :8088)</text>
+
+    <text x="545" y="126" fill="#f1f5f9" font-size="11" font-weight="600">• Serves Production React Bundle</text>
+    <text x="545" y="146" fill="#38bdf8" font-size="11" font-weight="600">• Reverse Proxies /api/* ➔ Node Backend (:4001)</text>
+  </g>
+
+  <!-- Flow Arrow: Client -> Nginx -->
+  <path d="M 470 122 L 522 122" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Flow Arrow: Nginx -> Backend -->
+  <path d="M 745 170 L 745 200 L 510 200 L 510 215" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="630" y="193" fill="#38bdf8" font-size="10" font-weight="600">proxy_pass http://backend:4001</text>
+
+  <!-- ==================== 3. BACKEND CORE ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="220" width="920" height="225" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.5" />
+    <rect x="40" y="220" width="920" height="28" rx="10" fill="#065f46" />
+    <rect x="40" y="238" width="920" height="10" fill="#065f46" />
+    <text x="55" y="240" fill="#ffffff" font-size="12" font-weight="700">3. CORE BACKEND PLATFORM (Node.js Express + TypeScript • Host Port 4001)</text>
+
+    <!-- Module A: REST API -->
+    <rect x="58" y="260" width="205" height="85" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <text x="70" y="280" fill="#34d399" font-size="11" font-weight="700">REST API &amp; Controllers</text>
+    <text x="70" y="298" fill="#94a3b8" font-size="10">• Zod Schema Validation</text>
+    <text x="70" y="315" fill="#94a3b8" font-size="10">• CSV &amp; Swagger Spec Parser</text>
+    <text x="70" y="332" fill="#94a3b8" font-size="10">• Fleet &amp; Reports Handlers</text>
+
+    <!-- Module B: Scheduler -->
+    <rect x="280" y="260" width="205" height="85" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <text x="292" y="280" fill="#38bdf8" font-size="11" font-weight="700">Synthetic Scheduler</text>
+    <text x="292" y="298" fill="#94a3b8" font-size="10">• node-cron Parallel Engine</text>
+    <text x="292" y="315" fill="#94a3b8" font-size="10">• Multi-interval Cron Dispatcher</text>
+    <text x="292" y="332" fill="#94a3b8" font-size="10">• Consecutive Streak Tracking</text>
+
+    <!-- Module C: Load Testing -->
+    <rect x="502" y="260" width="205" height="85" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <text x="514" y="280" fill="#fbbf24" font-size="11" font-weight="700">Load Testing Engine</text>
+    <text x="514" y="298" fill="#94a3b8" font-size="10">• Async Concurrent Pool</text>
+    <text x="514" y="315" fill="#94a3b8" font-size="10">• p50, p95, p99 Latencies</text>
+    <text x="514" y="332" fill="#94a3b8" font-size="10">• Isolated In-Memory Runtime</text>
+
+    <!-- Module D: Root Cause -->
+    <rect x="724" y="260" width="220" height="85" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <text x="736" y="280" fill="#f43f5e" font-size="11" font-weight="700">Root-Cause Classifier (RCA)</text>
+    <text x="736" y="298" fill="#94a3b8" font-size="10">• Timeout &amp; DNS Matchers</text>
+    <text x="736" y="315" fill="#94a3b8" font-size="10">• ECONNREFUSED Heuristics</text>
+    <text x="736" y="332" fill="#94a3b8" font-size="10">• 5xx / 4xx Diagnostic Layer</text>
+
+    <!-- Module E: Hybrid Chat Sub-banner -->
+    <rect x="58" y="357" width="886" height="74" rx="6" fill="url(#cardGrad)" stroke="#6366f1" stroke-width="1" />
+    <text x="72" y="378" fill="#a5b4fc" font-size="12" font-weight="700">🤖 HYBRID AIOps CHAT ENGINE &amp; HUMAN-IN-THE-LOOP DECISION LAYER</text>
+
+    <!-- Gemini branch -->
+    <rect x="72" y="390" width="415" height="32" rx="4" fill="#1e1b4b" stroke="#818cf8" stroke-width="1" />
+    <text x="82" y="405" fill="#c7d2fe" font-size="10" font-weight="600">Primary: Google Gemini 3.8 Flash Agent</text>
+    <text x="82" y="417" fill="#818cf8" font-size="9">Structured Tool Calling: run_check, run_load_test, create_endpoint, pause/resume</text>
+
+    <!-- Fallback branch -->
+    <rect x="505" y="390" width="425" height="32" rx="4" fill="#1e293b" stroke="#64748b" stroke-width="1" />
+    <text x="515" y="405" fill="#e2e8f0" font-size="10" font-weight="600">Fallback: Deterministic Pattern Engine (Zero Dependency)</text>
+    <text x="515" y="417" fill="#94a3b8" font-size="9">Instant seamless local fallback on rate limits or offline network; zero false data</text>
+  </g>
+
+  <!-- Connectors from Backend down to Storage & Targets -->
+  <path d="M 200 445 L 200 482" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)" />
+  <path d="M 370 445 L 370 482" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)" />
+  <path d="M 680 445 L 680 482" fill="none" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-purple)" />
+  <path d="M 850 445 L 850 482" fill="none" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-purple)" />
+
+  <!-- ==================== 4. STORAGE & CACHE ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="490" width="445" height="150" rx="10" fill="url(#cardGrad)" stroke="#d97706" stroke-width="1.5" />
+    <rect x="40" y="490" width="445" height="26" rx="10" fill="#92400e" />
+    <rect x="40" y="506" width="445" height="10" fill="#92400e" />
+    <text x="55" y="508" fill="#ffffff" font-size="12" font-weight="700">4. PERSISTENCE &amp; CACHE LAYER</text>
+
+    <!-- Postgres box -->
+    <rect x="55" y="525" width="200" height="100" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1" />
+    <text x="65" y="546" fill="#fcd34d" font-size="11" font-weight="700">PostgreSQL 15 (:5434)</text>
+    <text x="65" y="566" fill="#e2e8f0" font-size="10">• Time-Series Check Logs</text>
+    <text x="65" y="583" fill="#e2e8f0" font-size="10">• Immutable Uptime History</text>
+    <text x="65" y="600" fill="#e2e8f0" font-size="10">• Endpoints &amp; Outage Incidents</text>
+    <text x="65" y="617" fill="#94a3b8" font-size="9">Named Docker Volume</text>
+
+    <!-- Redis box -->
+    <rect x="270" y="525" width="200" height="100" rx="6" fill="#1e293b" stroke="#f87171" stroke-width="1" />
+    <text x="280" y="546" fill="#fca5a5" font-size="11" font-weight="700">Redis 7 Alpine (:6379)</text>
+    <text x="280" y="566" fill="#e2e8f0" font-size="10">• 30s TTL Summary Cache</text>
+    <text x="280" y="583" fill="#e2e8f0" font-size="10">• Fleet Metric Caching</text>
+    <text x="280" y="600" fill="#e2e8f0" font-size="10">• Protects DB from High Polling</text>
+    <text x="280" y="617" fill="#94a3b8" font-size="9">Key: dashboard:summary</text>
+  </g>
+
+  <!-- ==================== 5. MONITORED TARGETS ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="515" y="490" width="445" height="150" rx="10" fill="url(#cardGrad)" stroke="#9333ea" stroke-width="1.5" />
+    <rect x="515" y="490" width="445" height="26" rx="10" fill="#6b21a8" />
+    <rect x="515" y="506" width="445" height="10" fill="#6b21a8" />
+    <text x="530" y="508" fill="#ffffff" font-size="12" font-weight="700">5. MONITORED SERVICES &amp; TARGETS</text>
+
+    <!-- Target 1: Public -->
+    <rect x="530" y="525" width="130" height="100" rx="6" fill="#1e293b" stroke="#c084fc" stroke-width="1" />
+    <text x="540" y="546" fill="#e9d5ff" font-size="11" font-weight="700">External APIs</text>
+    <text x="540" y="568" fill="#94a3b8" font-size="10">• Payment APIs</text>
+    <text x="540" y="586" fill="#94a3b8" font-size="10">• Partner Services</text>
+    <text x="540" y="604" fill="#94a3b8" font-size="10">• Public Gateways</text>
+
+    <!-- Target 2: Internal -->
+    <rect x="672" y="525" width="135" height="100" rx="6" fill="#1e293b" stroke="#c084fc" stroke-width="1" />
+    <text x="682" y="546" fill="#e9d5ff" font-size="11" font-weight="700">Microservices</text>
+    <text x="682" y="568" fill="#94a3b8" font-size="10">• Internal VMS</text>
+    <text x="682" y="586" fill="#94a3b8" font-size="10">• Core Pod APIs</text>
+    <text x="682" y="604" fill="#94a3b8" font-size="10">• Private Subnets</text>
+
+    <!-- Target 3: Specs -->
+    <rect x="818" y="525" width="130" height="100" rx="6" fill="#1e293b" stroke="#c084fc" stroke-width="1" />
+    <text x="828" y="546" fill="#e9d5ff" font-size="11" font-weight="700">OpenAPI / Specs</text>
+    <text x="828" y="568" fill="#94a3b8" font-size="10">• Swagger 2.0</text>
+    <text x="828" y="586" fill="#94a3b8" font-size="10">• OpenAPI 3.0</text>
+    <text x="828" y="604" fill="#94a3b8" font-size="10">• Auto Discovery</text>
+  </g>
+</svg>

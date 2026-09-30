@@ -227,8 +227,8 @@
     <p class="section-lede">Say this before you touch the keyboard.</p>
 
     <div class="script">
-      <p>"So — quick context before I show you this. Right now, if someone on our team wants to know whether an internal API or a partner service is actually up, there's no real way to check besides manually pinging it, or waiting until a customer complains. There's no shared history, no dashboard, nothing that tells you an API's been degrading for the last three days.</p>
-      <p>That's the gap this closes. It's a <b>synthetic monitoring platform</b> — you register an endpoint once, and from that point on it gets health-checked automatically, forever, on whatever schedule you set. Could be every minute, could be every hour. And everything it finds — uptime, response time, failures — lands on one dashboard anyone on the team can pull up.</p>
+      <p>"So — quick context before I show you this. Right now, if someone wants to know whether an internal API or a partner service is actually up, there's no real way to check besides manually pinging it, or waiting until a customer complains. There's no shared history, no dashboard, nothing that tells you an API's been degrading for the last three days.</p>
+      <p>That's the gap this closes. It's a <b>synthetic monitoring platform</b> I built — you register an endpoint once, and from that point on it gets health-checked automatically, forever, on whatever schedule you set. Could be every minute, could be every hour. And everything it finds — uptime, response time, failures — lands on one dashboard anyone on the team can pull up.</p>
       <p class="beat">And deployment's deliberately boring — the entire thing, frontend and backend included, is four Docker containers brought up with one command. Nothing external, nothing to license, nothing that needs its own infra ticket. It's meant for whoever's closest to the pain: DevOps first, but developers and QA get the same visibility without having to ask.</p>
       <p>Let me just show you, it's faster than explaining it."</p>
     </div>
@@ -246,7 +246,7 @@
       <div class="beat-index">01</div>
       <div class="beat-content">
         <h3>Bring up the whole stack</h3>
-        <p><span class="cue">terminal → docker compose up -d --build</span> "Before anything else — this is the entire deployment." <span class="beat">(run it, let all four containers come up)</span> "Postgres, Redis, the API, and the frontend — four containers, one command. Nothing else to install anywhere, on any machine that has Docker."</p>
+        <p><span class="cue">terminal → docker compose up -d --build</span> "Before anything else — this is the entire deployment." <span class="beat">(run it, let all four containers come up)</span> "Postgres, Redis, my Express API, and the frontend — four containers, one command. Nothing else to install anywhere, on any machine that has Docker."</p>
       </div>
     </div>
 
@@ -254,12 +254,12 @@
       <div class="beat-index">02</div>
       <div class="beat-content">
         <h3>Land on the dashboard — it's already working</h3>
-        <p><span class="cue">open localhost:8088</span> "And here's the dashboard. I've already got a few real MTN endpoints registered — the MOMO API, our visitor management system, a couple more. This one's been running unattended, so this is genuinely what it looks like day to day, not a staged demo state."</p>
-        <p>"Notice the live beacon in the top right — <span class="cue">point to the 'Live • auto-refresh in 15s' pill</span> — the dashboard continuously updates itself every 15 seconds, and there's a 'Run all checks now' button if we ever want to force an immediate run across everything after a deploy."</p>
+        <p><span class="cue">open localhost:8088</span> "And here's the dashboard. I've already got a few real MTN endpoints registered — the MOMO API, the visitor management system, a couple more. This one's been running unattended, so this is genuinely what it looks like day to day, not a staged demo state."</p>
+        <p>"Notice the live beacon in the top right — <span class="cue">point to the 'Live • auto-refresh in 15s' pill</span> — the dashboard continuously updates itself every 15 seconds, and there's a 'Run all checks now' button if anyone ever wants to force an immediate run across everything after a deploy."</p>
         <p>"Top cards give executive KPIs at a glance: total endpoints, healthy, failed, and global average latency. Directly underneath is a Quick Actions bar with one-click shortcuts to Add Endpoint, Import OpenAPI, and SLA Reports."</p>
-        <p>"Right in the main view, we pair the macro and micro: on the left is the Health Distribution donut. On the right — <span class="cue">point to Endpoint Health</span> — is our worst-first live health list. We brought this right to the top so whatever is failing commands attention immediately. MOMO sandbox has actually been down for hours, and it floats right to the top with its exact downtime streak. We also have live filter chips — <span class="cue">click 'Issues'</span> — to isolate degraded APIs, and a search input for filtering when monitoring dozens of services."</p>
-        <p>"And down here — <span class="cue">scroll to System Performance Trends</span> — is our 24-hour aggregate trendline. I can flip between Latency (ms) and Availability (%), or toggle between 24 hours, 7 days, and 30 days to see if system performance is drifting."</p>
-        <p>"At the bottom — <span class="cue">scroll to Recent Failures</span> — is the full-width audit log showing every failure, status code, error, and our automated root-cause classification."</p>
+        <p>"Right in the main view, I pair the macro and micro: on the left is the Health Distribution donut. On the right — <span class="cue">point to Endpoint Health</span> — is the worst-first live health list. I brought this right to the top so whatever is failing commands attention immediately. MOMO sandbox has actually been down for hours, and it floats right to the top with its exact downtime streak. I also built live filter chips — <span class="cue">click 'Issues'</span> — to isolate degraded APIs, and a search input for filtering when monitoring dozens of services."</p>
+        <p>"And down here — <span class="cue">scroll to System Performance Trends</span> — is the 24-hour aggregate trendline I built. I can flip between Latency (ms) and Availability (%), or toggle between 24 hours, 7 days, and 30 days to see if system performance is drifting."</p>
+        <p>"At the bottom — <span class="cue">scroll to Recent Failures</span> — is the full-width audit log showing every failure, status code, error, and the automated root-cause classification I built."</p>
       </div>
     </div>
 
@@ -306,8 +306,9 @@
     <div class="beat-block">
       <div class="beat-index">08</div>
       <div class="beat-content">
-        <h3>Back to the dashboard — the new service is live</h3>
-        <p><span class="cue">Dashboard</span> "And now we're back on the dashboard. The new endpoints from the OpenAPI discovery are already incorporated into our health distribution, our trends chart, and our Endpoint Health table. Everything stays synchronized in real time without refreshing the browser."</p>
+        <h3>Back to the dashboard — live sync &amp; internal pod observability</h3>
+        <p><span class="cue">Dashboard</span> "And now we're back on the dashboard. The new endpoints from the OpenAPI discovery are already incorporated into the health distribution, the trends chart, and the Endpoint Health table. Everything stays synchronized in real time without refreshing the browser."</p>
+        <p>"A quick point on something I know you've been big on: <b>monitoring our internal tools, pods, and microservices in OpenShift and Kubernetes</b>. Right now, this platform monitors any internal microservice endpoint reachable over the network — like our VMS service. What I do not have access to yet is the actual OpenShift/Kubernetes cluster environments and pod credentials. Because of that access boundary, deep pod telemetry like container restarts and CPU throttling isn't hooked in today, but I've structured the system so we can do that integration seamlessly in Phase 2 the moment cluster access is provisioned."</p>
       </div>
     </div>
 
@@ -315,8 +316,8 @@
       <div class="beat-index">09</div>
       <div class="beat-content">
         <h3>Examine Reports & Root-Cause Classification</h3>
-        <p><span class="cue">Reports</span> "Next stop is Reports — three operational tiers. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services we're tracking, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking."</p>
-        <p><span class="beat">(scroll to the bottom table)</span> "And down here — every outage today, service by service, with the actual error. And next to it — this is root-cause analysis." <span class="beat">(point at the Likely Cause column)</span> "Every failure gets auto-classified — timeout, DNS issue, connection refused, server error, client error — instead of someone reading a raw error string and guessing what it means. It's rule-based against the error patterns we already capture, not a model, so I can tell you exactly why it called each one. This is the page I'd bring to a postmortem."</p>
+        <p><span class="cue">Reports</span> "Next stop is Reports, which I split into three operational tiers. Daily numbers at the top. Then weekly — fastest, slowest, least stable, best availability, four rankings side by side. Then a 30-day rollup: how many services are tracked, average uptime across all of them, how many separate incidents happened, how many are degraded right now, plus an uptime ranking."</p>
+        <p><span class="beat">(scroll to the bottom table)</span> "And down here — every outage today, service by service, with the actual error. And next to it — this is root-cause analysis." <span class="beat">(point at the Likely Cause column)</span> "Every failure gets auto-classified — timeout, DNS issue, connection refused, server error, client error — instead of someone reading a raw error string and guessing what it means. It's rule-based against the error patterns I already capture, not a model, so I can tell you exactly why it called each one. This is the page I'd bring to a postmortem."</p>
       </div>
     </div>
 
@@ -324,10 +325,10 @@
       <div class="beat-index">10</div>
       <div class="beat-content">
         <h3>Ask the assistant — AI Agent & Interactive Operations Chatbot</h3>
-        <p><span class="cue">click floating chat icon (bottom-right)</span> "And finally — this directly answers two major points from your feedback: 'Add chat bots/AI agents' and 'Decision layer (Human in the loop, then automate)'. We built an interactive operational assistant right into the bottom corner of every page."</p>
+        <p><span class="cue">click floating chat icon (bottom-right)</span> "And finally — this directly answers two major points from your feedback: 'Add chat bots/AI agents' and 'Decision layer (Human in the loop, then automate)'. I built an interactive operational assistant right into the bottom corner of every page."</p>
         <p><span class="cue">click 'What's down?' suggestion pill</span> "You don't even have to hunt through dashboards. Ask 'What's down?', 'Slowest APIs', or 'Outages today' — and it immediately responds with live telemetry, uptime streaks, and direct clickable links to the failing services."</p>
-        <p><span class="cue">type: 'Is MOMO API up?' → then follow up: 'Run a check on it'</span> "And it isn't just a Q&amp;A box — it understands multi-turn context and has real operational function-calling tools. When I ask 'Is MOMO up?', it reports the current state. When I follow up with 'Run a check on it', it resolves the pronoun, triggers an immediate synthetic check over the network, and reports the live response time right in the conversation. It can trigger checks, launch concurrent load tests, onboard new endpoints, and pause or resume monitoring schedules on command."</p>
-        <p>"Under the hood, it's a resilient hybrid architecture: powered by a Google Gemini 3.8 Flash agent with strict tool calling when configured, with an automatic, instant fallback to our local zero-dependency keyword engine if offline or unconfigured. No hallucinations, no downtime, and no security leaks."</p>
+        <p><span class="cue">type: 'Is MOMO API up?' → then follow up: 'Run a check on it'</span> "And it isn't just a Q&amp;A box — it understands multi-turn context and has real operational function-calling tools. When I ask 'Is MOMO up?', it reports the current state. When I follow up with 'Run a check on it', it resolves the pronoun, triggers an immediate synthetic check over the network, and reports the live response time right in the conversation. I gave it the ability to trigger checks, launch concurrent load tests, onboard new endpoints, and pause or resume monitoring schedules on command."</p>
+        <p>"Under the hood, I engineered a resilient hybrid architecture: powered by a Google Gemini 3.8 Flash agent with strict tool calling when configured, with an automatic, instant fallback to my local zero-dependency keyword engine if offline or unconfigured. No hallucinations, no downtime, and no security leaks."</p>
       </div>
     </div>
   </section>
@@ -485,8 +486,8 @@
       <p class="a">"It's on the dashboard immediately — Recent Failures and the health list both update within the minute. Alerting's item one on that roadmap I just showed — deliberately scoped out of this first version, not missed."</p>
     </div>
     <div class="qa">
-      <p class="q">"Can it reach our internal services, not just public sites?"</p>
-      <p class="a">"Anything reachable from wherever we deploy it — internal network included. That's the point of running it ourselves instead of a third-party monitor."</p>
+      <p class="q">"Can it monitor our internal tools, pods, and microservices in OpenShift and Kubernetes?"</p>
+      <p class="a">"Anything reachable over the network right now — like our internal VMS microservice — can be monitored immediately. For direct pod-level monitoring inside OpenShift and Kubernetes (pod restarts, memory/CPU metrics, crash loops), I don't have cluster or namespace access yet. I've designed the architecture so that once cluster access is granted, we can do that integration in Phase 2 without changing the core platform."</p>
     </div>
     <div class="qa">
       <p class="q">"Is the root-cause thing actually AI?"</p>
