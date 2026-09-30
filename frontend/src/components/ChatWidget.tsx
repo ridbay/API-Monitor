@@ -105,23 +105,33 @@ export function ChatWidget() {
     const trimmed = text.trim();
     if (!trimmed || sendMessage.isPending) return;
 
+    // Everything said so far in this session, minus the static greeting —
+    // lets the LLM resolve follow-ups like "run a check on it".
+    const history = messages
+      .filter((m) => m.id !== "greeting")
+      .slice(-20)
+      .map((m) => ({ role: m.role, text: m.text }));
+
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", text: trimmed }]);
     setInput("");
 
-    sendMessage.mutate(trimmed, {
-      onSuccess: (result) => {
-        setMessages((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), role: "assistant", text: result.reply, entities: result.entities, suggestions: result.suggestions },
-        ]);
-      },
-      onError: () => {
-        setMessages((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), role: "assistant", text: "Something went wrong reaching the assistant. Try again." },
-        ]);
-      },
-    });
+    sendMessage.mutate(
+      { message: trimmed, history },
+      {
+        onSuccess: (result) => {
+          setMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "assistant", text: result.reply, entities: result.entities, suggestions: result.suggestions },
+          ]);
+        },
+        onError: () => {
+          setMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "assistant", text: "Something went wrong reaching the assistant. Try again." },
+          ]);
+        },
+      }
+    );
   }
 
   if (!open) {

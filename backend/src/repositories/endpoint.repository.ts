@@ -114,6 +114,16 @@ export const endpointRepository = {
     return result.rows[0] ?? null;
   },
 
+  async setActive(id: number, isActive: boolean): Promise<Endpoint | null> {
+    const result = await pool.query(
+      `UPDATE endpoints SET is_active = $2, updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING *`,
+      [id, isActive]
+    );
+    return result.rows[0] ?? null;
+  },
+
   async softDelete(id: number): Promise<boolean> {
     const result = await pool.query(
       `UPDATE endpoints SET deleted_at = NOW(), is_active = FALSE WHERE id = $1 AND deleted_at IS NULL`,

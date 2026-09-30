@@ -27,6 +27,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
       PORT: 4001
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/api_monitoring

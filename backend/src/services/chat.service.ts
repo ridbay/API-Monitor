@@ -18,9 +18,9 @@ export interface ChatResponse {
   suggestions?: string[];
 }
 
-type HealthEntry = Awaited<ReturnType<typeof dashboardService.getEndpointHealth>>[number];
+export type HealthEntry = Awaited<ReturnType<typeof dashboardService.getEndpointHealth>>[number];
 
-function formatDuration(sinceIso: string | null): string {
+export function formatDuration(sinceIso: string | null): string {
   if (!sinceIso) return "an unknown amount of time";
 
   const ms = Date.now() - new Date(sinceIso).getTime();
@@ -51,11 +51,11 @@ const HELP_TEXT = `Here's what I can answer or do:
 
 I'm a keyword-matched assistant over the platform's own data, not a language model — ask me one of the above and I'll go look it up or run it.`;
 
-function toEntity(entry: HealthEntry, detail: string): ChatEntity {
+export function toEntity(entry: HealthEntry, detail: string): ChatEntity {
   return { endpoint_id: entry.endpoint_id, name: entry.name, status: entry.status, detail };
 }
 
-async function matchEndpoint(message: string, health: HealthEntry[]) {
+export async function matchEndpoint(message: string, health: HealthEntry[]) {
   const lower = message.toLowerCase();
 
   const rawMatches = health

@@ -179,3 +179,8 @@ export interface ChatResponse {
   entities?: ChatEntity[];
   suggestions?: string[];
 }
+
+export interface ChatTurn {
+  role: "user" | "assistant";
+  text: string;
+}

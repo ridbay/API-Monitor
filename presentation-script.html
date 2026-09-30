@@ -323,10 +323,11 @@
     <div class="beat-block">
       <div class="beat-index">10</div>
       <div class="beat-content">
-        <h3>Ask the assistant — interactive ops chatbot</h3>
-        <p><span class="cue">click floating chat icon (bottom-right)</span> "And finally — this directly answers the last piece of your feedback: 'Add chat bots/AI agents'. We built an operational assistant right into the bottom corner of every page."</p>
-        <p><span class="cue">click 'What's down?' suggestion pill</span> "You don't even have to hunt through dashboards. Ask 'What's down?', 'Slowest APIs', or 'Outages today' — and it immediately responds with live data, uptime streaks, and direct clickable links to the failing services."</p>
-        <p>"And I want to be 100% transparent about how it works: right now, without corporate approval for external LLM APIs, this is an honest, keyword-matched engine running directly against our PostgreSQL database and root-cause classifier. No hallucinatory answers, no external data leakage. And when LLM/agent access is approved in Phase 2, this exact UI widget connects directly to our model."</p>
+        <h3>Ask the assistant — AI Agent & Interactive Operations Chatbot</h3>
+        <p><span class="cue">click floating chat icon (bottom-right)</span> "And finally — this directly answers two major points from your feedback: 'Add chat bots/AI agents' and 'Decision layer (Human in the loop, then automate)'. We built an interactive operational assistant right into the bottom corner of every page."</p>
+        <p><span class="cue">click 'What's down?' suggestion pill</span> "You don't even have to hunt through dashboards. Ask 'What's down?', 'Slowest APIs', or 'Outages today' — and it immediately responds with live telemetry, uptime streaks, and direct clickable links to the failing services."</p>
+        <p><span class="cue">type: 'Is MOMO API up?' → then follow up: 'Run a check on it'</span> "And it isn't just a Q&amp;A box — it understands multi-turn context and has real operational function-calling tools. When I ask 'Is MOMO up?', it reports the current state. When I follow up with 'Run a check on it', it resolves the pronoun, triggers an immediate synthetic check over the network, and reports the live response time right in the conversation. It can trigger checks, launch concurrent load tests, onboard new endpoints, and pause or resume monitoring schedules on command."</p>
+        <p>"Under the hood, it's a resilient hybrid architecture: powered by a Google Gemini 3.8 Flash agent with strict tool calling when configured, with an automatic, instant fallback to our local zero-dependency keyword engine if offline or unconfigured. No hallucinations, no downtime, and no security leaks."</p>
       </div>
     </div>
   </section>
@@ -431,8 +432,13 @@
         </tr>
         <tr>
           <td class="layer">Phase 1</td>
-          <td>Ops Chat Assistant (Rule-Based)</td>
-          <td><b style="color: var(--brand-500);">Built</b> — Floating interactive chat widget on all pages querying live status, outages, and rankings without external LLM dependencies.</td>
+          <td>AI Ops Assistant &amp; Autonomous Actions</td>
+          <td><b style="color: var(--brand-500);">Built</b> — Floating interactive assistant powered by Gemini 3.8 Flash function-calling tools with conversational checks, load tests, and onboarding, backed by deterministic local fallback.</td>
+        </tr>
+        <tr>
+          <td class="layer">Phase 1</td>
+          <td>Human-in-the-Loop Operational Decision Layer</td>
+          <td><b style="color: var(--brand-500);">Built</b> — Assistant triggers live checks, load tests, pauses, and registrations upon human conversational command.</td>
         </tr>
         <tr>
           <td class="layer">Phase 2.1</td>

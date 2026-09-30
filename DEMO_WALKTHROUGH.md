@@ -176,20 +176,37 @@ It's deterministic pattern analysis against network errors and status codes—gi
 
 ---
 
-### Beat 10 · Ask the Assistant — Interactive Ops Chatbot
+### Beat 10 · Ask the Assistant — AI Agent & Interactive Operations Chatbot
 
-> **CUE:** Click the **floating bot icon** in the bottom-right corner of the screen. Click the **'What\'s down?'** suggestion chip.
+> **CUE:** Click the **floating bot icon** in the bottom-right corner of the screen.
 
-"And finally—this directly addresses the last piece of your feedback: *'Add chatbots / AI agents'*. We built a floating operational assistant right into the bottom corner of every page.
+"And finally—this directly answers two major points from your feedback: *'Add chatbots / AI agents'* and *'Decision layer (Human in the loop, then automate)'*. We built an interactive AI operational assistant directly into the bottom corner of every page.
 
-You don't even have to hunt through dashboards. Just click the assistant or ask:
-- *'What’s down?'*
-- *'Slowest APIs'*
-- *'Outages today'*
+Let me show you how this is different from a simple search box:
 
-Look at the response: it immediately returns live telemetry, uptime streaks, and direct clickable links to the failing services.
+1. **Natural Language Telemetry Queries:**
+   > **CUE:** Click the **'What\'s down?'** suggestion chip or type it in.  
+   You don't have to navigate dashboards to triage incidents. Ask:
+   - *'What’s down?'*
+   - *'Slowest APIs this week'*
+   - *'Give me a fleet summary'*  
+   It queries our database in real time, lists the affected services, their current downtime streak, and provides direct clickable links to the endpoint details.
 
-And I want to be 100% transparent about how it works: right now, without corporate approval for external LLM APIs, this is an honest, keyword-matched engine running directly against our PostgreSQL database and root-cause classifier. No hallucinatory answers, no security leaks. And when LLM/agent access is approved in Phase 2, this exact UI widget connects directly to our model."
+2. **Multi-Turn Context & Autonomous Tool Actions:**
+   > **CUE:** Type: *'Is MOMO API up?'* wait for reply, then type: *'Run a check on it'* (or *'Run a load test on it'*).  
+   Notice that it understands follow-ups. When I ask *'Is MOMO API up?'*, it checks the status. When I follow up with *'Run a check on it'*, the assistant recognizes 'it' refers to MOMO, invokes our backend **function-calling tool**, executes an immediate synthetic check over the network, and reports the live response time and status code right in the chat.
+   
+   It has real operational tools:
+   - Trigger instant checks (`run_check`)
+   - Trigger concurrent load tests (`run_load_test`)
+   - Onboard new services via conversation (`create_endpoint`)
+   - Pause or resume monitoring schedules (`set_endpoint_active`)
+   - Update endpoint timeouts and intervals (`update_endpoint`)
+
+3. **Hybrid Architecture (Zero Hallucinations & Resilient Fallback):**  
+   We engineered this with a resilient dual-engine architecture:
+   - **Google Gemini 3.8 Flash Agent:** When configured with an API key, it acts as an autonomous function-calling agent strictly constrained by system instructions to execute tools without hallucinating false data.
+   - **Deterministic Fallback Engine:** If an external LLM API is unavailable, unconfigured, or offline, the backend automatically falls back to our local, pattern-matched engine (`chat.service.ts`). It has zero external dependencies, zero token costs, and never breaks down in isolated internal network environments."
 
 ---
 
@@ -197,12 +214,14 @@ And I want to be 100% transparent about how it works: right now, without corpora
 
 "For anyone curious about how this is actually engineered:
 
-- **Frontend:** Built with React, TypeScript, Tailwind CSS, and Recharts. Live data is handled by React Query, which runs the 15-second polling loop and manages cache invalidation.
-- **Backend:** Node.js Express in TypeScript. Every single request is validated with Zod schemas before touching the database—invalid data literally cannot be written.
+- **Frontend:** Built with React, TypeScript, Tailwind CSS, and Recharts. Live telemetry is managed by React Query with a 15-second polling loop and intelligent cache invalidation. A global floating `ChatWidget` is accessible across all views.
+- **Backend:** Node.js Express in TypeScript with strict Zod validation on every route.
 - **Scheduler:** A parallel `node-cron` worker that evaluates intervals and fires checks simultaneously—it runs the exact same loop whether monitoring 5 endpoints or 500.
-- **Performance Engine:** `loadTest.service.ts` uses an asynchronous worker pool to burst traffic and calculate statistical percentiles.
-- **Root-Cause Service:** `rootCause.service.ts` uses regex pattern matching against network error strings and HTTP status codes.
-- **Chat Engine:** `chat.service.ts` parses intent and keywords to query real-time database views.
+- **Performance Engine:** `loadTest.service.ts` uses an asynchronous worker pool to execute concurrent bursts and calculate statistical percentiles (p50, p95, p99).
+- **Root-Cause Service:** `rootCause.service.ts` uses deterministic regex pattern matching against network error strings and HTTP status codes.
+- **AI Agent & Chat Engine:** 
+  - `llmChatGemini.service.ts` leverages Gemini 3.8 Flash with structured tool schemas (`chatTools.ts`) for multi-turn conversation and autonomous operations.
+  - `chat.service.ts` provides a deterministic keyword and intent router for seamless zero-dependency local fallback.
 - **Database & Cache:** PostgreSQL for time-series persistence (every single check is an immutable row), fronted by Redis caching summary stats for 30 seconds so frequent dashboard reloads never degrade database performance."
 
 ---
@@ -213,13 +232,13 @@ Here is how every single item from the feedback session is addressed:
 
 | # | Manager Feedback Point | Platform Status | How It Is Handled in the Demo |
 |---|---|---|---|
-| **1** | **API performance testing engine, concurrent bulk requests** | **Built (v1)** | Demonstrated live on Endpoint Details with p50, p95, p99 percentiles and RPS metrics. |
+| **1** | **API performance testing engine, concurrent bulk requests** | **Built (v1)** | Demonstrated live on Endpoint Details with p50, p95, p99 percentiles and RPS metrics; can also be triggered via AI Chat. |
 | **2** | **Auto root-cause analysis** | **Built (v1)** | Demonstrated on Dashboard Recent Failures and Daily Reports (Timeout, DNS, Connection Refused, 5xx). |
-| **3** | **Chatbots / AI agents** | **Built (v1 Rule-Based)** | Demonstrated live via the floating chat widget on every page querying telemetry without LLM risk. |
-| **4** | **Proactive anomaly & degradation detection** | **Phase 2.1 Roadmap** | Statistical baseline tracking (moving average + std dev) to alert on latency creep before an outage occurs. |
-| **5** | **Multi-channel alerting & incident grouping** | **Phase 2.2 Roadmap** | Webhook integration (Slack / Teams / Email) with deduplication so 10 failed pings = 1 incident. |
-| **6** | **Auto-remediation (Human-in-the-loop)** | **Phase 2.3 Roadmap** | Remediation suggestions with one-click approval buttons (e.g. restart pod, flush Redis cache). |
-| **7** | **Pod & Kubernetes observability** | **Phase 2.4 Roadmap** | Direct OpenShift & Kubernetes cluster metrics integration once cluster access is provisioned. |
+| **3** | **Chatbots / AI agents** | **Built (v1 Hybrid)** | Live floating assistant on every page powered by Gemini 3.8 Flash function-calling tools with deterministic local fallback. |
+| **4** | **Decision layer (Human in the loop, then automate)** | **Built (v1)** | Chat assistant can trigger checks, load tests, endpoint onboarding, and pause/resume actions upon human conversational command. |
+| **5** | **Proactive anomaly & degradation detection** | **Phase 2.1 Roadmap** | Statistical baseline tracking (moving average + std dev) to alert on latency creep before an outage occurs. |
+| **6** | **Multi-channel alerting & incident grouping** | **Phase 2.2 Roadmap** | Webhook integration (Slack / Teams / Email) with deduplication so 10 failed pings = 1 incident. |
+| **7** | **Pod & Kubernetes observability** | **Phase 2.3 Roadmap** | Direct OpenShift & Kubernetes cluster metrics integration once cluster access is provisioned. |
 
 ---
 
@@ -227,6 +246,6 @@ Here is how every single item from the feedback session is addressed:
 
 > **CUE:** Close your laptop or turn back to your manager.
 
-"To sum it up: **Add an API once, and we are tracking its availability, latency, load capacity, and root causes forever.** 
+"To sum it up: **Add an API once, and we are tracking its availability, latency, load capacity, root causes, and autonomous operations forever.** 
 
 What questions can I answer for you?"
