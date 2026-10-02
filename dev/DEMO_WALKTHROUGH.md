@@ -179,11 +179,27 @@ Nobody wants to type forty rows into a web form. So I built two bulk onboarding 
 
 "Back on the dashboard: the newly discovered endpoints are already folded into the health distribution, the Endpoint Health list, and the performance trendlines. The dashboard picks up the changes automatically via React Query without a full page reload.
 
-Now, I want to proactively address something I know you've been very keen on: **using this platform to monitor our internal tools, microservices, and pods running inside OpenShift and Kubernetes**.
+Now, I want to proactively address something I know you've been very keen on: **using this platform to monitor our internal MTN tools, microservices, and pods running inside OpenShift and Kubernetes**.
 
-Right now, this platform monitors any internal microservice endpoint that is reachable over the network—like our internal VMS service or any REST API running on an internal host. What I do **not** have access to right now is the actual OpenShift and Kubernetes cluster environments, namespace service accounts, and infrastructure APIs. Because of that access boundary, deep pod-level telemetry—such as tracking container restarts, CPU throttling, OOM kills, and crash loops—isn't hooked in today.
+That's exactly where this is headed, and I think about it in two layers.
 
-However, I've designed the ingestion pipeline and database architecture so that the moment cluster access and service account tokens are provisioned, we can plug in the Kubernetes API and Prometheus scraper seamlessly as a Phase 2 integration without having to rebuild the platform."
+**Layer 1 — Service health. This works today.** The monitor probes any HTTP endpoint it can reach over the network. So once it's deployed inside MTN's network or inside the OpenShift cluster itself, it monitors our internal microservices directly—their health endpoints, their internal service DNS names, and the Swagger specs I just showed you importing. No code changes on their side, no agents to install. Every pod behind a service is being exercised through that service, and when one fails, the root-cause engine tells you whether it was a timeout, DNS, connection refused, or a 5xx.
+
+> **CUE (optional, ~20s):** Go to `Endpoints` → `Add Endpoint`. Name it `Platform Backend (internal)`, URL `http://backend:4001/health`, save, then click `↻`. It goes green.
+
+Let me show you what I mean. Notice I didn't use a public URL or `localhost` there—I used the internal service name, `backend`. That only resolves inside the platform's private container network, and it's green. Inside OpenShift, that's exactly the same mechanism as pointing it at `my-service.my-namespace.svc.cluster.local`.
+
+One honest caveat: right now it's running on my laptop, so it can only see what my laptop can see. Deployed on an internal VM or in the cluster, it sees everything that environment can see.
+
+**Layer 2 — Pod internals. That's the next phase.** Things like CPU and memory usage, container restarts, OOM kills, and crash loops don't come from HTTP checks—they come from the Kubernetes/OpenShift API and Prometheus. I've designed for it in the PRD, Section 14.2, but I can't build or test it against MTN's real cluster without access, and I didn't want to show you something faked.
+
+**So here's what I need to unblock it:**
+
+1. A **read-only service account** on one OpenShift namespace,
+2. The **Prometheus / OpenShift metrics endpoint**, and
+3. A **shortlist of priority services** to start with.
+
+With those, I can put pod restarts right next to endpoint failures on this dashboard. And *'API is down **and** its pod is restarting'* is a far stronger root cause than either signal on its own."
 
 ---
 
@@ -306,7 +322,7 @@ Here is how every single item from your feedback session is addressed:
 | **4** | **Decision layer (Human in the loop, then automate)** | **Built (v1)** | Chat assistant can trigger checks, load tests, endpoint onboarding, and pause/resume actions upon human conversational command. |
 | **5** | **Proactive anomaly & degradation detection** | **Phase 2.1 Roadmap** | Statistical baseline tracking (moving average + std dev) to alert on latency creep before an outage occurs. |
 | **6** | **Multi-channel alerting & incident grouping** | **Phase 2.2 Roadmap** | Webhook integration (Slack / Teams / Email) with deduplication so 10 failed pings = 1 incident. |
-| **7** | **Monitor internal tools, pods, microservices (OpenShift/K8s)** | **Roadmap (Phase 2)** | Proactively stated: I currently do not have OpenShift/Kubernetes cluster access. HTTP microservices are monitored today, and direct pod/cluster integration will be added in Phase 2 once access is provisioned. |
+| **7** | **Monitor internal tools, pods, microservices (OpenShift/K8s)** | **Layer 1 Built / Layer 2 Phase 2** | Beat 08: internal service health over HTTP works today (demoed via internal hostname `http://backend:4001/health`). Pod internals (CPU/memory/restarts/crash loops) need cluster access; asked for a read-only service account, the metrics endpoint, and a priority-service shortlist. |
 
 ---
 
@@ -318,7 +334,18 @@ Here are ready answers for the 5 most likely engineering and architectural quest
 > **Answer:** "I built the system as a resilient hybrid. In `chat.controller.ts`, if the Gemini API key is missing, hits rate limits, or an external API error occurs, I catch the error and immediately fall back to my local, pattern-matched engine (`chat.service.ts`). You experience zero crash, zero 500 error, and still get accurate telemetry directly from PostgreSQL."
 
 ### Q2: "Can this monitor our internal tools, pods, and microservices in OpenShift and Kubernetes?"
-> **Answer:** "Right now, it monitors any internal microservice endpoint that exposes an HTTP/REST interface reachable over the network (like our internal VMS service). However, for direct pod-level observability—such as monitoring container restarts, CPU throttling, or OOM crash loops inside OpenShift and Kubernetes—I do not have access to the cluster environments or service account credentials yet. I've designed the ingestion architecture so that once cluster access is granted, we can easily do that integration in Phase 2 without changing the core platform."
+> **Answer:** "Yes, in two layers. **Service health works today:** deploy it inside MTN's network or the cluster and it monitors any internal microservice over HTTP—health endpoints, internal service DNS names, Swagger-imported routes—with no code changes on their side. **Pod internals are Phase 2:** CPU, memory, restarts, and crash loops come from the Kubernetes/OpenShift API and Prometheus, and I don't have cluster access yet. To unblock it I need a read-only service account on one namespace, the metrics endpoint, and a shortlist of priority services."
+
+**Likely follow-ups:**
+
+- **"Why didn't you just build the pod part?"**
+  > "It needs credentials and network access to the cluster. I didn't want to hand you something faked or untested against our real environment. Everything that doesn't depend on that access is built."
+- **"Can it see our internal services right now?"**
+  > "From my laptop, only public URLs. Deployed on an internal VM or in the cluster, it reaches everything that environment can reach. The `backend` internal-hostname check I showed is the same mechanism."
+- **"How long would Layer 2 take?"**
+  > Give a range you're comfortable with, and tie it to **when access is granted**, not to today.
+- **"Is it safe to give it cluster access?"**
+  > "Read-only to start: `get` / `list` on pods, events, and metrics. No write permissions until we agree on a human-approved remediation flow, like the decision layer in the chat assistant."
 
 ### Q3: "Does running an on-demand load test skew our official uptime or SLA reports?"
 > **Answer:** "No, I deliberately designed an architectural boundary between them. Scheduled synthetic checks write to the `checks` table, which drives the SLA and uptime metrics. On-demand load tests execute in `loadTest.service.ts` in memory and return directly to the caller without inserting synthetic check rows into the database."
