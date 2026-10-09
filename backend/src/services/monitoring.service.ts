@@ -4,7 +4,7 @@ import { monitoringResultRepository } from "../repositories/monitoringResult.rep
 import { statisticsRepository } from "../repositories/statistics.repository";
 import { pool } from "../config/db";
 
-async function recalculateStats(endpointId: number) {
+export async function recalculateStats(endpointId: number) {
   const { rows } = await pool.query(
     `SELECT
        COUNT(*)::int AS total,

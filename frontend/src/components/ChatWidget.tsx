@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bot, ChevronDown, ChevronRight, Send, Sparkles, User } from "lucide-react";
+import {
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  Send,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { Button } from "./ui/Button";
 import { useSendChatMessage } from "../hooks/useChat";
 import type { ChatEntity } from "../types";
@@ -16,8 +23,15 @@ interface ChatMessage {
 const GREETING: ChatMessage = {
   id: "greeting",
   role: "assistant",
-  text: "Hi — I'm a keyword-matched assistant over this platform's own data, not a language model. Ask me about endpoint status, outages, or latency rankings — or tell me to run a check or a load test — or try one of the suggestions below.",
-  suggestions: ["What's down?", "What's up?", "Summary", "Outages today", "Slowest APIs", "Most unstable"],
+  text: "Hi! I can answer questions about your endpoints: what's up or down, recent outages, and which APIs are slowest. I can also run a health check or a load test for you. Try a suggestion below to get started.",
+  suggestions: [
+    "What's down?",
+    "What's up?",
+    "Summary",
+    "Outages today",
+    "Slowest APIs",
+    "Most unstable",
+  ],
 };
 
 const DOT_TONE_CLASSES: Record<ChatEntity["status"], string> = {
@@ -26,33 +40,66 @@ const DOT_TONE_CLASSES: Record<ChatEntity["status"], string> = {
   unknown: "bg-[var(--color-text-faint)]",
 };
 
-function EntityRow({ entity, onClick }: { entity: ChatEntity; onClick: () => void }) {
+function EntityRow({
+  entity,
+  onClick,
+}: {
+  entity: ChatEntity;
+  onClick: () => void;
+}) {
   return (
     <Link
       to={`/endpoints/${entity.endpoint_id}`}
       onClick={onClick}
       className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs transition-colors hover:border-brand-400/50 hover:bg-[var(--color-surface-hover)]"
     >
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONE_CLASSES[entity.status]}`} />
-      <span className="truncate font-medium text-[var(--color-text)]">{entity.name}</span>
-      <span className="ml-auto shrink-0 text-[var(--color-text-faint)]">{entity.detail}</span>
-      <ChevronRight className="h-3 w-3 shrink-0 text-[var(--color-text-faint)]" strokeWidth={2} />
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONE_CLASSES[entity.status]}`}
+      />
+      <span className="truncate font-medium text-[var(--color-text)]">
+        {entity.name}
+      </span>
+      <span className="ml-auto shrink-0 text-[var(--color-text-faint)]">
+        {entity.detail}
+      </span>
+      <ChevronRight
+        className="h-3 w-3 shrink-0 text-[var(--color-text-faint)]"
+        strokeWidth={2}
+      />
     </Link>
   );
 }
 
-function MessageBubble({ message, onNavigate, onSuggestion }: { message: ChatMessage; onNavigate: () => void; onSuggestion: (text: string) => void }) {
+function MessageBubble({
+  message,
+  onNavigate,
+  onSuggestion,
+}: {
+  message: ChatMessage;
+  onNavigate: () => void;
+  onSuggestion: (text: string) => void;
+}) {
   const isUser = message.role === "user";
   return (
-    <div className={`flex items-start gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex items-start gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
+    >
       <div
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-          isUser ? "bg-brand-500/15 text-brand-300" : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
+          isUser
+            ? "bg-brand-500/15 text-brand-300"
+            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
         }`}
       >
-        {isUser ? <User className="h-3.5 w-3.5" strokeWidth={2} /> : <Bot className="h-3.5 w-3.5" strokeWidth={2} />}
+        {isUser ? (
+          <User className="h-3.5 w-3.5" strokeWidth={2} />
+        ) : (
+          <Bot className="h-3.5 w-3.5" strokeWidth={2} />
+        )}
       </div>
-      <div className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}>
+      <div
+        className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}
+      >
         <div
           className={`whitespace-pre-line rounded-xl px-3.5 py-2.5 text-sm ${
             isUser
@@ -66,7 +113,11 @@ function MessageBubble({ message, onNavigate, onSuggestion }: { message: ChatMes
         {message.entities && message.entities.length > 0 && (
           <div className="flex w-full flex-col gap-1">
             {message.entities.map((entity) => (
-              <EntityRow key={entity.endpoint_id} entity={entity} onClick={onNavigate} />
+              <EntityRow
+                key={entity.endpoint_id}
+                entity={entity}
+                onClick={onNavigate}
+              />
             ))}
           </div>
         )}
@@ -98,7 +149,10 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (!open) return;
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, open]);
 
   function submit(text: string) {
@@ -112,7 +166,10 @@ export function ChatWidget() {
       .slice(-20)
       .map((m) => ({ role: m.role, text: m.text }));
 
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", text: trimmed }]);
+    setMessages((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), role: "user", text: trimmed },
+    ]);
     setInput("");
 
     sendMessage.mutate(
@@ -121,16 +178,26 @@ export function ChatWidget() {
         onSuccess: (result) => {
           setMessages((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), role: "assistant", text: result.reply, entities: result.entities, suggestions: result.suggestions },
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              text: result.reply,
+              entities: result.entities,
+              suggestions: result.suggestions,
+            },
           ]);
         },
         onError: () => {
           setMessages((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), role: "assistant", text: "Something went wrong reaching the assistant. Try again." },
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              text: "Something went wrong reaching the assistant. Try again.",
+            },
           ]);
         },
-      }
+      },
     );
   }
 
@@ -152,8 +219,12 @@ export function ChatWidget() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
           <div>
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">Assistant</h2>
-            <p className="text-[11px] text-[var(--color-text-faint)]">Keyword-matched, not an LLM</p>
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">
+              Assistant
+            </h2>
+            <p className="text-[11px] text-[var(--color-text-faint)]">
+              Keyword-matched, not an LLM
+            </p>
           </div>
         </div>
         <button
@@ -165,9 +236,17 @@ export function ChatWidget() {
         </button>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-4 overflow-y-auto px-4 py-3"
+      >
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} onNavigate={() => setOpen(false)} onSuggestion={submit} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onNavigate={() => setOpen(false)}
+            onSuggestion={submit}
+          />
         ))}
         {sendMessage.isPending && (
           <div className="flex items-center gap-2.5">
@@ -195,7 +274,11 @@ export function ChatWidget() {
           placeholder="e.g. run a check on MOMO"
           className="flex-1 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-faint)] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
         />
-        <Button type="submit" disabled={sendMessage.isPending || !input.trim()} className="px-3">
+        <Button
+          type="submit"
+          disabled={sendMessage.isPending || !input.trim()}
+          className="px-3"
+        >
           <Send className="h-3.5 w-3.5" strokeWidth={2.5} />
         </Button>
       </form>
