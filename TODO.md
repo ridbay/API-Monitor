@@ -39,7 +39,7 @@ EXECUTIVE SUMMARY PAGE"
 |---|---|---|---|---|
 | **1** | Concurrent Bulk Performance Testing | Multi-endpoint load generator with configurable curves ($p50, p95, p99$) | High | 🟡 Partial (`loadTest.service.ts`) |
 | **2** | Pods & Microservices Observability | Kubernetes API daemon watching pod states, restarts, OOMKilled, limits | High | ⚪ Pending cluster credentials |
-| **3** | Auto-Detect Endpoints & Pods from Logs | Access log harvesting engine parsing URIs, normalizer & auto-catalog | High | ⚪ Planned (Phase 3) |
+| **3** | Auto-Detect Endpoints & Pods from Logs | Access log harvesting engine parsing URIs, normalizer & auto-catalog | High | 🟢 Completed (HTTP/file ingest; Kafka source pending) |
 | **4** | Kafka Big Log Pipeline $\to$ PostgreSQL | Apache Kafka broker, consumer worker pool, partitioned PostgreSQL tables | High | ⚪ Planned (Phase 3) |
 | **5** | **Topology Functionalities** | **Interactive service dependency graph with dynamic health & blast radius** | **CRITICAL** | 🟢 Completed (Phase 1) |
 | **6** | Network Traceroutes | Hop-by-hop latency and packet loss diagnostic visualizer | High | 🟢 Completed (Phase 1) |
@@ -162,16 +162,21 @@ EXECUTIVE SUMMARY PAGE"
   - [ ] Retention policies & automated pruning for big logs
 
 #### 3.3 Auto-Detect Endpoints, Pods & Services from Logs (Auto-Add)
-- [ ] Access Log Pattern Parser:
-  - [ ] Extract HTTP method, path, status, latency, upstream pod, service name
-- [ ] Route Regex Normalizer:
-  - [ ] Parameterize dynamic IDs (e.g. `/api/v1/users/49102` $\to$ `/api/v1/users/:id`)
-- [ ] Auto-Catalog Engine:
-  - [ ] Detect previously unseen endpoints and microservices
-  - [ ] Auto-register in database with tag `SOURCE_LOG_DISCOVERED`
-  - [ ] Schedule baseline synthetic health verification automatically
-- [ ] Discovery Review Console in UI:
-  - [ ] View newly discovered endpoints from logs with 1-click promotion to critical monitoring
+- [x] Access Log Pattern Parser (`backend/src/services/logParser.service.ts`):
+  - [x] Extract HTTP method, path, status, latency, host, upstream pod, service name
+  - [x] Formats: nginx/Apache common & combined (+vhost), OpenShift router (HAProxy), Envoy/JSON, Fluent Bit Kubernetes wrapper, morgan-style app logs
+- [x] Route Regex Normalizer:
+  - [x] Parameterize dynamic IDs (`/api/v1/users/49102` → `/api/v1/users/:id`; also `:uuid`, `:hash`, `:date`, `:email`, `:token`)
+  - [ ] Collapse high-cardinality literal segments (e.g. usernames) by sibling analysis — currently capped at 500 routes per host instead
+- [x] Auto-Catalog Engine (`logDiscovery.service.ts`, `POST /api/discovery/ingest` & `/upload`):
+  - [x] Detect previously unseen endpoints and microservices; per-route traffic stats (requests, 5xx rate, avg & p95 latency, status mix, pods)
+  - [x] Recognize routes already covered by a monitored endpoint
+  - [x] Promoted endpoints tagged `SOURCE_LOG_DISCOVERED`; optional `LOG_DISCOVERY_AUTO_PROMOTE`
+  - [x] Baseline synthetic health probe for each new GET route
+  - [x] Discovered services feed the topology graph with real error rate, latency and pod counts
+- [x] Discovery Review Console in UI (`frontend/src/pages/Discovery.tsx`):
+  - [x] View newly discovered endpoints from logs with 1-click promotion to monitoring (GET only), ignore/restore
+  - [x] Paste or upload logs; sample at `dev/sample-logs/access-log-sample.txt`
 
 #### 3.4 Multi-Endpoint Concurrent Performance Testing Suite
 - [ ] Expand `loadTest.service.ts` to support multi-endpoint scenario suites

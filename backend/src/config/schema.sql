@@ -158,3 +158,48 @@ CREATE TABLE IF NOT EXISTS autopilot_policies (
   updated_by TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Phase 3: Endpoint auto-discovery from logs
+ALTER TABLE endpoints ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'MANUAL';
+
+CREATE TABLE IF NOT EXISTS discovered_routes (
+  id SERIAL PRIMARY KEY,
+  scheme TEXT NOT NULL,
+  host TEXT NOT NULL,
+  method TEXT NOT NULL,
+  path_template TEXT NOT NULL,
+  sample_path TEXT NOT NULL,
+  service_name TEXT,
+  pods TEXT[] NOT NULL DEFAULT '{}',
+  request_count BIGINT NOT NULL DEFAULT 0,
+  error_count BIGINT NOT NULL DEFAULT 0,
+  status_counts JSONB NOT NULL DEFAULT '{}',
+  latency_sum_ms BIGINT NOT NULL DEFAULT 0,
+  latency_samples BIGINT NOT NULL DEFAULT 0,
+  -- Counts per bucket; upper bounds (ms) are defined in logDiscovery.service.ts.
+  latency_buckets INTEGER[] NOT NULL DEFAULT '{0,0,0,0,0,0,0,0,0,0,0}',
+  status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'MONITORED', 'PROMOTED', 'IGNORED')),
+  endpoint_id INTEGER REFERENCES endpoints(id) ON DELETE SET NULL,
+  baseline_status TEXT CHECK (baseline_status IN ('up', 'down')),
+  baseline_status_code INTEGER,
+  baseline_response_time INTEGER,
+  baseline_error TEXT,
+  baseline_checked_at TIMESTAMPTZ,
+  first_seen TIMESTAMPTZ NOT NULL,
+  last_seen TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (host, method, path_template)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovered_routes_status ON discovered_routes(status);
+
+CREATE TABLE IF NOT EXISTS log_ingest_batches (
+  id SERIAL PRIMARY KEY,
+  source TEXT NOT NULL,
+  lines_received INTEGER NOT NULL,
+  lines_parsed INTEGER NOT NULL,
+  lines_skipped INTEGER NOT NULL,
+  routes_seen INTEGER NOT NULL,
+  routes_new INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

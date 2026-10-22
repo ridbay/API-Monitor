@@ -3,6 +3,7 @@ import net from "net";
 import { pool } from "../config/db";
 import { Endpoint, MonitoringInterval, MonitoringResult } from "../types";
 import { classifyFailure } from "./rootCause.service";
+import { isInternalHost } from "../utils/hosts";
 import { addTimelineEvent, getIncidentDetails, Incident } from "./incident.service";
 
 export type RcaScope = "endpoint" | "service" | "fleet";
@@ -702,14 +703,6 @@ function hostOf(url: string): string {
   } catch {
     return "internal-service";
   }
-}
-
-// Cluster-internal names and private addresses are services we can act on
-// with Kubernetes; anything else is a third-party host.
-function isInternalHost(host: string): boolean {
-  if (host === "localhost" || !host.includes(".")) return true;
-  if (/\.(local|internal|svc|cluster\.local|corp|lan)$/.test(host)) return true;
-  return /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
 }
 
 // Best guess at the workload behind a host: the first DNS label, or the

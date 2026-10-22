@@ -15,6 +15,7 @@ import { tracerouteRouter } from "./routes/traceroute.routes";
 import { executiveRouter } from "./routes/executive.routes";
 import { incidentRouter, notificationRouter } from "./routes/incident.routes";
 import { remediationRouter } from "./routes/remediation.routes";
+import { discoveryRouter } from "./routes/discovery.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -23,7 +24,8 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Log batches posted as JSON to /api/discovery/ingest can run to megabytes.
+app.use(express.json({ limit: "20mb" }));
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
@@ -41,6 +43,7 @@ app.use("/api/executive", executiveRouter);
 app.use("/api/incidents", incidentRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/remediation", remediationRouter);
+app.use("/api/discovery", discoveryRouter);
 
 app.use(errorHandler);
 

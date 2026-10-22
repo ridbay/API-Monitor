@@ -1,4 +1,6 @@
 import { pool } from "../config/db";
+import { isInternalHost } from "../utils/hosts";
+import { discoveredServices } from "./logDiscovery.service";
 
 export interface TopologyNode {
   id: string;
@@ -251,6 +253,38 @@ export async function getServiceTopology(): Promise<TopologyData> {
     }
 
     serviceIdx++;
+  }
+
+  // Services seen only in traffic logs: real error rate, latency and pods,
+  // but no endpoints until a route is promoted to monitoring.
+  for (const svc of await discoveredServices()) {
+    if (serviceGroups.has(svc.host.replace(/:\d+$/, ""))) continue;
+    const serviceId = `svc-${svc.host.replace(/[^a-zA-Z0-9]/g, "-")}`;
+    const internal = isInternalHost(svc.host);
+    const status: TopologyNode["status"] = svc.error_rate_pct > 20 ? "down" : svc.error_rate_pct > 2 ? "degraded" : "up";
+    nodes.push({
+      id: serviceId,
+      name: svc.service_name ?? svc.host,
+      type: internal ? "service" : "external",
+      status,
+      latencyMs: svc.avg_latency_ms ?? 0,
+      uptimePct: Number((100 - svc.error_rate_pct).toFixed(2)),
+      rps: 0,
+      podCount: svc.pods.length || undefined,
+      namespace: internal ? "discovered" : undefined,
+      description: `Discovered from logs: ${svc.routes} route(s), ${svc.requests} request(s) observed`,
+      endpoints: [],
+    });
+    edges.push({
+      id: `edge-ingress-to-${serviceId}`,
+      source: "edge-ingress",
+      target: serviceId,
+      protocol: "HTTP/REST",
+      status: status === "down" ? "failed" : status === "degraded" ? "degraded" : "healthy",
+      rps: 0,
+      avgLatencyMs: svc.avg_latency_ms ?? 0,
+      errorRatePct: svc.error_rate_pct,
+    });
   }
 
   const healthyNodes = nodes.filter((n) => n.status === "up").length;

@@ -26,6 +26,10 @@ import type {
   RcaReport,
   RemediationPlan,
   AutopilotSettings,
+  DiscoveredRoute,
+  DiscoverySummary,
+  LogIngestResult,
+  IngestDefaults,
 } from "../types";
 
 export const api = axios.create({ baseURL: "/api" });
@@ -106,6 +110,25 @@ export const tracerouteApi = {
 
 export const executiveApi = {
   getSummary: () => api.get<ExecutiveSummaryData>("/executive/summary").then((r) => r.data),
+};
+
+export const discoveryApi = {
+  listRoutes: (params: { status?: string; q?: string }) =>
+    api.get<DiscoveredRoute[]>("/discovery/routes", { params }).then((r) => r.data),
+  summary: () => api.get<DiscoverySummary>("/discovery/summary").then((r) => r.data),
+  ingestText: (text: string, defaults: IngestDefaults) =>
+    api.post<LogIngestResult>("/discovery/ingest", { text, defaults }).then((r) => r.data),
+  uploadFile: (file: File, defaults: IngestDefaults) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (defaults.host) form.append("host", defaults.host);
+    if (defaults.service) form.append("service", defaults.service);
+    return api.post<LogIngestResult>("/discovery/upload", form).then((r) => r.data);
+  },
+  promote: (id: number, overrides: { url?: string; name?: string }) =>
+    api.post(`/discovery/routes/${id}/promote`, overrides).then((r) => r.data),
+  ignore: (id: number) => api.post<DiscoveredRoute>(`/discovery/routes/${id}/ignore`).then((r) => r.data),
+  restore: (id: number) => api.post<DiscoveredRoute>(`/discovery/routes/${id}/restore`).then((r) => r.data),
 };
 
 export const remediationApi = {

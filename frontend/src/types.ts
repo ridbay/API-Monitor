@@ -443,3 +443,55 @@ export interface RcaReport {
   recommendations: RcaRecommendation[];
   signals_unavailable: string[];
 }
+
+export type DiscoveredRouteStatus = "NEW" | "MONITORED" | "PROMOTED" | "IGNORED";
+
+export interface DiscoveredRoute {
+  id: number;
+  scheme: string;
+  host: string;
+  method: string;
+  path_template: string;
+  sample_path: string;
+  service_name: string | null;
+  pods: string[];
+  request_count: number;
+  error_count: number;
+  status_counts: Record<string, number>;
+  status: DiscoveredRouteStatus;
+  endpoint_id: number | null;
+  baseline_status: "up" | "down" | null;
+  baseline_status_code: number | null;
+  baseline_response_time: number | null;
+  baseline_error: string | null;
+  baseline_checked_at: string | null;
+  first_seen: string;
+  last_seen: string;
+  avg_latency_ms: number | null;
+  p95_latency_ms: number | null;
+  error_rate_pct: number;
+}
+
+export interface LogIngestResult {
+  batch_id: number;
+  lines_received: number;
+  lines_parsed: number;
+  lines_skipped_static: number;
+  lines_without_host: number;
+  lines_unparsed: number;
+  unparsed_samples: string[];
+  routes_seen: number;
+  routes_new: number;
+  routes_rejected: number;
+}
+
+export interface DiscoverySummary {
+  counts: Record<DiscoveredRouteStatus, number>;
+  hosts: number;
+  services: number;
+}
+
+export interface IngestDefaults {
+  host?: string;
+  service?: string;
+}
