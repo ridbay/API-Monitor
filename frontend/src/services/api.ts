@@ -16,6 +16,14 @@ import type {
   StatusCodeCount,
   TrendPoint,
   WeeklyReport,
+  TopologyData,
+  TracerouteResult,
+  ExecutiveSummaryData,
+  Incident,
+  IncidentStatus,
+  NotificationLog,
+  NotificationConfig,
+  RcaReport,
 } from "../types";
 
 export const api = axios.create({ baseURL: "/api" });
@@ -83,4 +91,33 @@ export const loadTestApi = {
 export const chatApi = {
   send: (message: string, history?: ChatTurn[]) =>
     api.post<ChatResponse>("/chat/message", { message, history }).then((r) => r.data),
+};
+
+export const topologyApi = {
+  get: () => api.get<TopologyData>("/topology").then((r) => r.data),
+};
+
+export const tracerouteApi = {
+  getByEndpointId: (id: number) => api.get<TracerouteResult>(`/traceroute/${id}`).then((r) => r.data),
+  run: (target: string | number) => api.post<TracerouteResult>("/traceroute/run", { target }).then((r) => r.data),
+};
+
+export const executiveApi = {
+  getSummary: () => api.get<ExecutiveSummaryData>("/executive/summary").then((r) => r.data),
+};
+
+export const incidentsApi = {
+  list: (params?: { status?: string; severity?: string }) =>
+    api.get<Incident[]>("/incidents", { params }).then((r) => r.data),
+  getById: (idOrRef: string | number) =>
+    api.get<Incident & { notifications: NotificationLog[] }>(`/incidents/${idOrRef}`).then((r) => r.data),
+  updateStatus: (idOrRef: string | number, status: IncidentStatus, note?: string) =>
+    api.patch<Incident>(`/incidents/${idOrRef}/status`, { status, note }).then((r) => r.data),
+  addTimelineNote: (id: number, message: string) =>
+    api.post(`/incidents/${id}/timeline`, { message }).then((r) => r.data),
+  runRca: (id: number) => api.post<RcaReport>(`/incidents/${id}/rca`).then((r) => r.data),
+  getNotificationLogs: (incidentId?: number) =>
+    api.get<NotificationLog[]>("/notifications/logs", { params: { incidentId } }).then((r) => r.data),
+  getNotificationConfigs: () =>
+    api.get<NotificationConfig[]>("/notifications/configs").then((r) => r.data),
 };

@@ -26,11 +26,11 @@ const GREETING: ChatMessage = {
   text: "Hi! I can answer questions about your endpoints: what's up or down, recent outages, and which APIs are slowest. I can also run a health check or a load test for you. Try a suggestion below to get started.",
   suggestions: [
     "What's down?",
-    "What's up?",
     "Summary",
-    "Outages today",
+    "Show topology",
+    "Executive summary",
+    "Run traceroute on Github",
     "Slowest APIs",
-    "Most unstable",
   ],
 };
 

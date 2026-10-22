@@ -87,3 +87,16 @@ body {
     opacity: 0;
   }
 }
+
+@keyframes flow-dash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-flow-dash {
+  animation: flow-dash 1.2s linear infinite;
+}

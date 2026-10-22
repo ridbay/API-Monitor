@@ -10,6 +10,10 @@ import { importRouter } from "./routes/import.routes";
 import { openapiRouter } from "./routes/openapi.routes";
 import { loadTestRouter } from "./routes/loadTest.routes";
 import { chatRouter } from "./routes/chat.routes";
+import { topologyRouter } from "./routes/topology.routes";
+import { tracerouteRouter } from "./routes/traceroute.routes";
+import { executiveRouter } from "./routes/executive.routes";
+import { incidentRouter, notificationRouter } from "./routes/incident.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -30,6 +34,11 @@ app.use("/api/import", importRouter);
 app.use("/api/openapi", openapiRouter);
 app.use("/api/load-test", loadTestRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/topology", topologyRouter);
+app.use("/api/traceroute", tracerouteRouter);
+app.use("/api/executive", executiveRouter);
+app.use("/api/incidents", incidentRouter);
+app.use("/api/notifications", notificationRouter);
 
 app.use(errorHandler);
 

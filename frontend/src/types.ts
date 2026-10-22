@@ -184,3 +184,217 @@ export interface ChatTurn {
   role: "user" | "assistant";
   text: string;
 }
+
+// --- Phase 1: Topology Types ---
+export interface TopologyNode {
+  id: string;
+  name: string;
+  type: "ingress" | "service" | "pod" | "database" | "cache" | "broker" | "external";
+  status: "up" | "degraded" | "down";
+  latencyMs: number;
+  uptimePct: number;
+  rps: number;
+  podCount?: number;
+  namespace?: string;
+  cluster?: string;
+  description: string;
+  endpoints: Array<{
+    id: number;
+    name: string;
+    url: string;
+    method: string;
+    status: "up" | "down";
+    latency: number;
+  }>;
+}
+
+export interface TopologyEdge {
+  id: string;
+  source: string;
+  target: string;
+  protocol: "HTTP/REST" | "TCP" | "POSTGRES" | "REDIS" | "KAFKA";
+  status: "healthy" | "degraded" | "failed";
+  rps: number;
+  avgLatencyMs: number;
+  errorRatePct: number;
+}
+
+export interface TopologyData {
+  nodes: TopologyNode[];
+  edges: TopologyEdge[];
+  summary: {
+    totalNodes: number;
+    healthyNodes: number;
+    degradedNodes: number;
+    downNodes: number;
+    totalEdges: number;
+    overallHealthPct: number;
+    criticalPathLatencyMs: number;
+  };
+}
+
+// --- Phase 1: Network Traceroute Types ---
+export interface TracerouteHop {
+  hopNumber: number;
+  ip: string;
+  hostname: string;
+  rttMs: number;
+  packetLossPct: number;
+  status: "success" | "congested" | "timeout" | "unreachable";
+  nodeType: "gateway" | "proxy" | "router" | "isp" | "cdn" | "target";
+  asn?: string;
+  location?: string;
+}
+
+export interface TracerouteResult {
+  targetUrl: string;
+  targetHost: string;
+  resolvedIp: string;
+  dnsLookupMs: number;
+  totalHops: number;
+  totalLatencyMs: number;
+  bottleneckHop: number | null;
+  status: "healthy" | "degraded" | "failed";
+  summary: string;
+  timestamp: string;
+  hops: TracerouteHop[];
+}
+
+// --- Phase 1: Executive Summary Types ---
+export interface BusinessDomainHealth {
+  name: string;
+  category: "financial" | "customer" | "infrastructure" | "partner";
+  endpointCount: number;
+  availabilityPct: number;
+  avgLatencyMs: number;
+  status: "healthy" | "degraded" | "down";
+  activeIncidents: number;
+  slaCommitmentPct: number;
+}
+
+export interface ExecutiveSummaryData {
+  fleetAvailabilityPct: number;
+  slaCommitmentPct: number;
+  slaBreachRisk: "low" | "medium" | "high";
+  mttdSeconds: number;
+  mttrMinutes: number;
+  totalEndpoints: number;
+  totalServices: number;
+  healthyCount: number;
+  degradedCount: number;
+  downCount: number;
+  totalChecks24h: number;
+  outageMinutesAvoided: number;
+  businessDomains: BusinessDomainHealth[];
+  trend30Days: Array<{
+    date: string;
+    availability: number;
+    targetSla: number;
+    incidentCount: number;
+    avgLatency: number;
+  }>;
+  recentCriticalIncidents: Array<{
+    id: string;
+    serviceName: string;
+    endpointUrl: string;
+    durationMinutes: number;
+    severity: "P1" | "P2" | "P3";
+    rootCause: string;
+    detectedAt: string;
+    status: "RESOLVED" | "INVESTIGATING" | "MITIGATED";
+  }>;
+}
+
+// --- Phase 2: Enterprise Incidents & Notifications ---
+export type IncidentSeverity = "P1" | "P2" | "P3" | "P4";
+export type IncidentStatus =
+  | "TRIGGERED"
+  | "ACKNOWLEDGED"
+  | "INVESTIGATING"
+  | "MITIGATED"
+  | "RESOLVED"
+  | "CLOSED";
+
+export interface IncidentTimelineEvent {
+  id: number;
+  incident_id: number;
+  event_type: string;
+  message: string;
+  actor: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface NotificationLog {
+  id: number;
+  incident_id: number;
+  channel: "EMAIL" | "SMS" | "SERVICENOW" | "SLACK" | "TEAMS";
+  recipient: string;
+  subject: string | null;
+  content: string;
+  status: "SENT" | "FAILED" | "QUEUED";
+  created_at: string;
+}
+
+export interface NotificationConfig {
+  id: number;
+  name: string;
+  channel: "EMAIL" | "SMS" | "SERVICENOW" | "SLACK" | "TEAMS";
+  destination: string;
+  min_severity: "P1" | "P2" | "P3" | "P4";
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Incident {
+  id: number;
+  reference: string;
+  endpoint_id: number | null;
+  service_name: string;
+  title: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  root_cause: string | null;
+  root_cause_category: string | null;
+  affected_pods: string[] | null;
+  servicenow_sys_id: string | null;
+  servicenow_ticket_num: string | null;
+  servicenow_status: string | null;
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+  mitigated_at: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  timeline?: IncidentTimelineEvent[];
+  notifications?: NotificationLog[];
+  rca?: RcaReport | null;
+}
+
+export type RcaConfidence = "high" | "medium" | "low";
+export type RemediationRisk = "low" | "medium" | "high";
+
+export interface RcaRecommendation {
+  step: number;
+  title: string;
+  rationale: string;
+  action: string;
+  params: Record<string, unknown>;
+  risk: RemediationRisk;
+  requires?: "kubernetes";
+}
+
+export interface RcaReport {
+  incident_id: number;
+  incident_reference: string;
+  generated_at: string;
+  diagnosis: {
+    category: string;
+    summary: string;
+    confidence: RcaConfidence;
+    scope: "endpoint" | "service" | "fleet";
+  };
+  evidence: Array<{ signal: string; finding: string; abnormal: boolean }>;
+  recommendations: RcaRecommendation[];
+  signals_unavailable: string[];
+}

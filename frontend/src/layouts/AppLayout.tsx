@@ -1,9 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Activity, FileBarChart, LayoutDashboard, ListChecks, UploadCloud } from "lucide-react";
+import { Activity, FileBarChart, LayoutDashboard, ListChecks, UploadCloud, Network, ShieldCheck, AlertOctagon } from "lucide-react";
 import { ChatWidget } from "../components/ChatWidget";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true, icon: LayoutDashboard },
+  { to: "/topology", label: "Topology", icon: Network },
+  { to: "/executive-summary", label: "Executive", icon: ShieldCheck },
+  { to: "/incidents", label: "Incidents", icon: AlertOctagon },
   { to: "/endpoints", label: "Endpoints", icon: ListChecks },
   { to: "/import", label: "Import", icon: UploadCloud },
   { to: "/reports", label: "Reports", icon: FileBarChart },

@@ -5,6 +5,11 @@ import { endpointRepository } from "../repositories/endpoint.repository";
 import { endpointService, createEndpointSchema, updateEndpointSchema } from "./endpoint.service";
 import { executeCheck } from "./monitoring.service";
 import { runLoadTest } from "./loadTest.service";
+import { getServiceTopology } from "./topology.service";
+import { runTraceroute } from "./traceroute.service";
+import { getExecutiveSummary } from "./executive.service";
+import { listIncidents, getIncidentDetails } from "./incident.service";
+import { getLatestRcaReport } from "./rcaEngine.service";
 import { ChatEntity, formatDuration, matchEndpoint, toEntity } from "./chat.service";
 
 // Shared between LLM providers (currently just llmChatGemini.service.ts, but
@@ -123,6 +128,43 @@ export const TOOL_SPECS: ToolSpec[] = [
         interval: { type: "string", enum: ["1m", "5m", "15m", "30m", "1h"] },
       },
       required: ["name"],
+    },
+  },
+  {
+    name: "get_topology_summary",
+    description: "Get the live microservice dependency graph and topology status: total nodes, healthy/degraded/down services, critical path latency, and infrastructure components (Ingress, Postgres, Redis, Kafka).",
+    schema: { type: "object", properties: {} },
+  },
+  {
+    name: "run_traceroute",
+    description: "Run a hop-by-hop network path diagnostic to a monitored endpoint to measure DNS resolution, gateway transit, edge CDN, and destination server latency.",
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "The endpoint name or a substring of it to trace." },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "get_executive_summary",
+    description: "Get leadership and C-level metrics: overall fleet SLA percentage vs commitment (99.9%), Mean Time to Detect (MTTD), Mean Time to Resolve (MTTR), and business domain health breakdown.",
+    schema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_active_incidents",
+    description: "List currently active and unresolved enterprise incidents, their unique tracking IDs (INC-XXXX), severity (P1-P4), and ServiceNow ticket numbers.",
+    schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_incident_details",
+    description: "Look up full audit trail, root-cause analysis, and timeline for a specific incident by its unique reference (e.g. 'INC-202610-0042').",
+    schema: {
+      type: "object",
+      properties: {
+        reference: { type: "string", description: "The incident reference, e.g. 'INC-202610-0042'" },
+      },
+      required: ["reference"],
     },
   },
 ];
@@ -328,6 +370,105 @@ export async function executeTool(name: string, input: Record<string, unknown>):
       } catch (err) {
         if (err instanceof ZodError) return { forModel: { error: err.issues.map((i) => i.message).join("; ") } };
         throw err;
+      }
+    }
+
+    case "get_topology_summary": {
+      const topo = await getServiceTopology();
+      return {
+        forModel: {
+          summary: topo.summary,
+          microservices: topo.nodes.map((n) => ({
+            name: n.name,
+            type: n.type,
+            status: n.status,
+            latency: `${n.latencyMs}ms`,
+            uptime: `${n.uptimePct}%`,
+            pods: n.podCount ?? "N/A",
+          })),
+        },
+      };
+    }
+
+    case "run_traceroute": {
+      const matches = await matchEndpoint(String(input.name ?? ""), health);
+      if (matches.length === 0) return { forModel: { error: "No endpoint matches that name." } };
+      if (matches.length > 1) return { forModel: { ambiguous: matches.map((m) => m.name) } };
+      const endpoint = matches[0];
+      const trace = await runTraceroute(endpoint.endpoint_id);
+      return {
+        forModel: {
+          target: trace.targetHost,
+          total_hops: trace.totalHops,
+          latency: `${trace.totalLatencyMs}ms`,
+          status: trace.status,
+          summary: trace.summary,
+          hops: trace.hops.map((h) => `Hop ${h.hopNumber} (${h.hostname}): ${h.rttMs}ms [${h.status}]`),
+        },
+        entities: [toEntity(endpoint, `Trace: ${trace.totalLatencyMs}ms (${trace.totalHops} hops)`)],
+      };
+    }
+
+    case "get_executive_summary": {
+      const exec = await getExecutiveSummary();
+      return {
+        forModel: {
+          fleet_availability: `${exec.fleetAvailabilityPct}% (Target: ${exec.slaCommitmentPct}%)`,
+          sla_breach_risk: exec.slaBreachRisk,
+          mttd: `${exec.mttdSeconds} seconds`,
+          mttr: `${exec.mttrMinutes} minutes`,
+          total_monitored_endpoints: exec.totalEndpoints,
+          healthy_count: exec.healthyCount,
+          degraded_count: exec.degradedCount,
+          down_count: exec.downCount,
+          domains: exec.businessDomains.map((d) => `${d.name}: ${d.availabilityPct}% [${d.status}]`),
+        },
+      };
+    }
+
+    case "list_active_incidents": {
+      const incidents = await listIncidents();
+      const active = incidents.filter((i) => i.status !== "RESOLVED" && i.status !== "CLOSED");
+      return {
+        forModel: {
+          total_active_incidents: active.length,
+          incidents: active.map((i) => ({
+            reference: i.reference,
+            service: i.service_name,
+            severity: i.severity,
+            status: i.status,
+            servicenow_ticket: i.servicenow_ticket_num ?? "None",
+            title: i.title,
+            root_cause: i.root_cause ?? "Investigating",
+          })),
+        },
+      };
+    }
+
+    case "get_incident_details": {
+      try {
+        const inc = await getIncidentDetails(String(input.reference ?? ""));
+        const rca = await getLatestRcaReport(inc.id);
+        return {
+          forModel: {
+            reference: inc.reference,
+            service: inc.service_name,
+            severity: inc.severity,
+            status: inc.status,
+            servicenow_ticket: inc.servicenow_ticket_num,
+            root_cause: inc.root_cause,
+            affected_pods: inc.affected_pods,
+            acknowledged_by: inc.acknowledged_by,
+            timeline: inc.timeline?.map((t) => `[${t.event_type}] ${t.actor}: ${t.message}`) ?? [],
+            rca: rca && {
+              diagnosis: rca.diagnosis,
+              evidence: rca.evidence.filter((e) => e.abnormal).map((e) => `${e.signal}: ${e.finding}`),
+              recommended_steps: rca.recommendations.map((r) => `${r.step}. ${r.title} [${r.risk} risk]`),
+            },
+          },
+        };
+      } catch (err) {
+        return { forModel: { error: (err as Error).message } };
       }
     }
 

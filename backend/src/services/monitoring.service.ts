@@ -3,6 +3,7 @@ import { Endpoint } from "../types";
 import { monitoringResultRepository } from "../repositories/monitoringResult.repository";
 import { statisticsRepository } from "../repositories/statistics.repository";
 import { pool } from "../config/db";
+import { evaluateIncidentState } from "./incidentDetector.service";
 
 export async function recalculateStats(endpointId: number) {
   const { rows } = await pool.query(
@@ -61,4 +62,11 @@ export async function executeCheck(endpoint: Endpoint) {
   }
 
   await recalculateStats(endpoint.id);
+
+  // A detection failure must never fail the check itself.
+  try {
+    await evaluateIncidentState(endpoint);
+  } catch (err) {
+    console.error(`Incident evaluation failed for endpoint ${endpoint.id}:`, err);
+  }
 }

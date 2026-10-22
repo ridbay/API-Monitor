@@ -11,7 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Pencil, Trash2, Zap } from "lucide-react";
+import { Pencil, Trash2, Zap, Radio } from "lucide-react";
+import { TracerouteModal } from "../components/TracerouteModal";
 import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { ChartContainer } from "../components/ui/ChartContainer";
@@ -49,6 +50,7 @@ export function EndpointDetails() {
 
   const [rangeHours, setRangeHours] = useState(24);
   const [editOpen, setEditOpen] = useState(false);
+  const [tracerouteOpen, setTracerouteOpen] = useState(false);
 
   const { data: endpoint, isLoading } = useEndpoint(endpointId);
   const { data: trends } = useEndpointTrends(endpointId, rangeHours);
@@ -78,6 +80,10 @@ export function EndpointDetails() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setTracerouteOpen(true)}>
+            <Radio className="h-3.5 w-3.5 text-brand-400" strokeWidth={2.5} />
+            Traceroute
+          </Button>
           <Button variant="secondary" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} />
             Edit
@@ -200,6 +206,12 @@ export function EndpointDetails() {
           saving={updateEndpoint.isPending}
         />
       </Modal>
+
+      <TracerouteModal
+        endpointId={endpoint.id}
+        isOpen={tracerouteOpen}
+        onClose={() => setTracerouteOpen(false)}
+      />
     </div>
   );
 }

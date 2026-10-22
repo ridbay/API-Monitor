@@ -6,6 +6,9 @@ import { EndpointNew } from "../pages/EndpointNew";
 import { EndpointDetails } from "../pages/EndpointDetails";
 import { Import } from "../pages/Import";
 import { Reports } from "../pages/Reports";
+import { Topology } from "../pages/Topology";
+import { ExecutiveSummary } from "../pages/ExecutiveSummary";
+import { Incidents } from "../pages/Incidents";
 
 export const router = createBrowserRouter([
   {
@@ -13,6 +16,9 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <Dashboard /> },
+      { path: "topology", element: <Topology /> },
+      { path: "executive-summary", element: <ExecutiveSummary /> },
+      { path: "incidents", element: <Incidents /> },
       { path: "endpoints", element: <Endpoints /> },
       { path: "endpoints/new", element: <EndpointNew /> },
       { path: "endpoints/:id", element: <EndpointDetails /> },
