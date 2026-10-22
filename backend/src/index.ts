@@ -14,6 +14,7 @@ import { topologyRouter } from "./routes/topology.routes";
 import { tracerouteRouter } from "./routes/traceroute.routes";
 import { executiveRouter } from "./routes/executive.routes";
 import { incidentRouter, notificationRouter } from "./routes/incident.routes";
+import { remediationRouter } from "./routes/remediation.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -39,6 +40,7 @@ app.use("/api/traceroute", tracerouteRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/incidents", incidentRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/remediation", remediationRouter);
 
 app.use(errorHandler);
 

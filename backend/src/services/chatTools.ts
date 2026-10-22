@@ -10,6 +10,7 @@ import { runTraceroute } from "./traceroute.service";
 import { getExecutiveSummary } from "./executive.service";
 import { listIncidents, getIncidentDetails } from "./incident.service";
 import { getLatestRcaReport } from "./rcaEngine.service";
+import { approvePlan, getPlan, listPlans, rejectPlan } from "./remediation.service";
 import { ChatEntity, formatDuration, matchEndpoint, toEntity } from "./chat.service";
 
 // Shared between LLM providers (currently just llmChatGemini.service.ts, but
@@ -18,7 +19,9 @@ import { ChatEntity, formatDuration, matchEndpoint, toEntity } from "./chat.serv
 
 export const SYSTEM_PROMPT = `You are an assistant embedded in an internal API monitoring dashboard. Answer questions about monitored endpoints strictly using the tools provided — never guess or invent data that didn't come from a tool result. If a tool reports no match for a name, say so rather than assuming which endpoint was meant. Keep replies short and factual (1-3 sentences), like a terse ops engineer.
 
-run_check, run_load_test, create_endpoint, set_endpoint_active, and update_endpoint all have real side effects on the monitoring system — only call one when the user's message clearly asks for that specific action, never as a guess or a "while I'm at it" extra. Never call create_endpoint unless the user gives (or clearly implies) both a name and a URL to register. If any required detail for an action is missing or ambiguous, ask the user for it instead of calling the tool with a guess.`;
+run_check, run_load_test, create_endpoint, set_endpoint_active, update_endpoint, and approve_remediation all have real side effects on the monitoring system — only call one when the user's message clearly asks for that specific action, never as a guess or a "while I'm at it" extra. Never call create_endpoint unless the user gives (or clearly implies) both a name and a URL to register. If any required detail for an action is missing or ambiguous, ask the user for it instead of calling the tool with a guess. Only call approve_remediation when the user names the specific REC reference and clearly says to approve or reject it.`;
+
+const CHAT_APPROVER = "chat-assistant";
 
 export interface ToolSpec {
   name: string;
@@ -165,6 +168,29 @@ export const TOOL_SPECS: ToolSpec[] = [
         reference: { type: "string", description: "The incident reference, e.g. 'INC-202610-0042'" },
       },
       required: ["reference"],
+    },
+  },
+  {
+    name: "list_pending_remediations",
+    description: "List remediation steps (REC-XXXX) awaiting human approval, optionally for one incident, with their action, risk level and rationale.",
+    schema: {
+      type: "object",
+      properties: {
+        incident: { type: "string", description: "Optional incident reference, e.g. 'INC-202610-0042'." },
+      },
+    },
+  },
+  {
+    name: "approve_remediation",
+    description: "Approve (and execute) or reject a pending remediation step by its REC reference. High-risk steps can only be approved in the Incidents console.",
+    schema: {
+      type: "object",
+      properties: {
+        reference: { type: "string", description: "The remediation reference, e.g. 'REC-0042'." },
+        decision: { type: "string", enum: ["approve", "reject"] },
+        note: { type: "string", description: "Optional reason recorded in the audit trail." },
+      },
+      required: ["reference", "decision"],
     },
   },
 ];
@@ -465,6 +491,54 @@ export async function executeTool(name: string, input: Record<string, unknown>):
               evidence: rca.evidence.filter((e) => e.abnormal).map((e) => `${e.signal}: ${e.finding}`),
               recommended_steps: rca.recommendations.map((r) => `${r.step}. ${r.title} [${r.risk} risk]`),
             },
+          },
+        };
+      } catch (err) {
+        return { forModel: { error: (err as Error).message } };
+      }
+    }
+
+    case "list_pending_remediations": {
+      try {
+        const incidentRef = input.incident ? String(input.incident) : null;
+        const incidentId = incidentRef ? (await getIncidentDetails(incidentRef)).id : undefined;
+        const plans = await listPlans({ incidentId, status: "PENDING" });
+        return {
+          forModel: plans.map((p) => ({
+            reference: p.reference,
+            incident_id: p.incident_id,
+            step: p.step,
+            title: p.title,
+            action: p.action,
+            risk: p.risk,
+            rationale: p.rationale,
+          })),
+        };
+      } catch (err) {
+        return { forModel: { error: (err as Error).message } };
+      }
+    }
+
+    case "approve_remediation": {
+      try {
+        const plan = await getPlan(String(input.reference ?? ""));
+        const note = input.note ? String(input.note) : undefined;
+        if (input.decision === "reject") {
+          const rejected = await rejectPlan(plan.reference, CHAT_APPROVER, note);
+          return { forModel: { reference: rejected.reference, status: rejected.status } };
+        }
+        if (input.decision !== "approve") return { forModel: { error: "decision must be 'approve' or 'reject'" } };
+        // Chat can't establish who is asking, so infrastructure changes need the console.
+        if (plan.risk === "high") {
+          return { forModel: { error: `${plan.reference} is high risk; approve it in the Incidents console.` } };
+        }
+        const done = await approvePlan(plan.reference, CHAT_APPROVER, note);
+        return {
+          forModel: {
+            reference: done.reference,
+            status: done.status,
+            result: done.result,
+            verification: done.verification,
           },
         };
       } catch (err) {

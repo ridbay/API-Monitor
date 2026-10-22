@@ -46,6 +46,8 @@ export interface RcaReport {
   evidence: RcaEvidence[];
   recommendations: RcaRecommendation[];
   signals_unavailable: string[];
+  // Set on the value analyzeIncident returns; not part of the stored report.
+  report_id?: number;
 }
 
 interface ProbeResult {
@@ -95,8 +97,8 @@ export async function analyzeIncident(incidentRef: number | string): Promise<Rca
     ? await analyzeEndpointIncident(incident, incident.endpoint_id)
     : unlinkedIncidentReport(incident);
 
-  await pool.query(
-    `INSERT INTO rca_reports (incident_id, diagnosis_category, confidence, report) VALUES ($1, $2, $3, $4)`,
+  const { rows } = await pool.query<{ id: number }>(
+    `INSERT INTO rca_reports (incident_id, diagnosis_category, confidence, report) VALUES ($1, $2, $3, $4) RETURNING id`,
     [incident.id, report.diagnosis.category, report.diagnosis.confidence, JSON.stringify(report)]
   );
   await pool.query(
@@ -112,7 +114,7 @@ export async function analyzeIncident(incidentRef: number | string): Promise<Rca
     { category: report.diagnosis.category }
   );
 
-  return report;
+  return { ...report, report_id: rows[0].id };
 }
 
 export async function getLatestRcaReport(incidentId: number): Promise<RcaReport | null> {

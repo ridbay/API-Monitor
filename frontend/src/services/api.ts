@@ -24,6 +24,8 @@ import type {
   NotificationLog,
   NotificationConfig,
   RcaReport,
+  RemediationPlan,
+  AutopilotSettings,
 } from "../types";
 
 export const api = axios.create({ baseURL: "/api" });
@@ -104,6 +106,16 @@ export const tracerouteApi = {
 
 export const executiveApi = {
   getSummary: () => api.get<ExecutiveSummaryData>("/executive/summary").then((r) => r.data),
+};
+
+export const remediationApi = {
+  approve: (reference: string, actor: string, note?: string) =>
+    api.post<RemediationPlan>(`/remediation/plans/${reference}/approve`, { actor, note }).then((r) => r.data),
+  reject: (reference: string, actor: string, note?: string) =>
+    api.post<RemediationPlan>(`/remediation/plans/${reference}/reject`, { actor, note }).then((r) => r.data),
+  getAutopilot: () => api.get<AutopilotSettings>("/remediation/autopilot").then((r) => r.data),
+  setAutopilot: (action: string, enabled: boolean, actor: string) =>
+    api.put<AutopilotSettings>(`/remediation/autopilot/${action}`, { enabled, actor }).then((r) => r.data),
 };
 
 export const incidentsApi = {

@@ -2,7 +2,7 @@ import { pool } from "../config/db";
 import { Endpoint, MonitoringResult } from "../types";
 import { classifyFailure, FailureCategory } from "./rootCause.service";
 import { createIncident, updateIncidentStatus, Incident, IncidentSeverity } from "./incident.service";
-import { analyzeIncident } from "./rcaEngine.service";
+import { analyzeAndPlan } from "./remediation.service";
 
 // Read lazily — index.ts loads .env after its imports have already run.
 function failureThreshold(): number {
@@ -97,9 +97,9 @@ async function openIfFailing(endpoint: Endpoint): Promise<void> {
   });
 
   // The incident is already open and notified; a failed analysis only means
-  // it keeps the initial classification.
+  // it keeps the initial classification and gets no remediation plan.
   try {
-    await analyzeIncident(incident.id);
+    await analyzeAndPlan(incident.id);
   } catch (err) {
     console.error(`Root cause analysis failed for incident ${incident.reference}:`, err);
   }

@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { incidentsApi } from "../services/api";
 import { RcaPanel } from "../components/RcaPanel";
+import { RemediationPanel } from "../components/RemediationPanel";
+import { AutopilotSettings } from "../components/AutopilotSettings";
 import type {
   IncidentSeverity,
   IncidentStatus,
@@ -160,6 +162,7 @@ export function Incidents() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <AutopilotSettings />
           <button
             onClick={() => setIsCreateOpen(true)}
             className="flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-brand-500 to-accent-500 px-3.5 text-xs font-semibold text-white shadow-lg shadow-brand-500/20 hover:from-brand-600 hover:to-accent-600 transition-all"
@@ -451,6 +454,7 @@ export function Incidents() {
 
                   {/* Root Cause Analysis & Affected Pods */}
                   <RcaPanel incident={activeDetail} />
+                  <RemediationPanel incident={activeDetail} />
 
                   {/* Multi-Channel Notification Audit Trail */}
                   {activeDetail.notifications && activeDetail.notifications.length > 0 && (

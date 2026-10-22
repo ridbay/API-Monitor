@@ -9,7 +9,8 @@ import {
   IncidentSeverity,
 } from "../services/incident.service";
 import { getNotificationLogs, getNotificationConfigs } from "../services/notification.service";
-import { analyzeIncident, getLatestRcaReport } from "../services/rcaEngine.service";
+import { getLatestRcaReport } from "../services/rcaEngine.service";
+import { analyzeAndPlan, listPlans } from "../services/remediation.service";
 
 export const incidentRouter = Router();
 
@@ -28,11 +29,12 @@ incidentRouter.get("/:id", async (req: Request, res: Response, next: NextFunctio
   try {
     const id = req.params.id;
     const incident = await getIncidentDetails(id);
-    const [notifications, rca] = await Promise.all([
+    const [notifications, rca, remediation_plans] = await Promise.all([
       getNotificationLogs(incident.id),
       getLatestRcaReport(incident.id),
+      listPlans({ incidentId: incident.id }),
     ]);
-    res.json({ ...incident, notifications, rca });
+    res.json({ ...incident, notifications, rca, remediation_plans });
   } catch (err) {
     next(err);
   }
@@ -54,8 +56,8 @@ incidentRouter.get("/:id/rca", async (req: Request, res: Response, next: NextFun
 
 incidentRouter.post("/:id/rca", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rca = await analyzeIncident(req.params.id);
-    res.status(201).json(rca);
+    const { report } = await analyzeAndPlan(req.params.id);
+    res.status(201).json(report);
   } catch (err) {
     next(err);
   }

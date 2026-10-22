@@ -369,6 +369,51 @@ export interface Incident {
   timeline?: IncidentTimelineEvent[];
   notifications?: NotificationLog[];
   rca?: RcaReport | null;
+  remediation_plans?: RemediationPlan[];
+}
+
+export type RemediationPlanStatus =
+  | "PENDING"
+  | "EXECUTING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "COMPLETED"
+  | "REJECTED"
+  | "SUPERSEDED";
+
+export interface RemediationPlan {
+  id: number;
+  reference: string;
+  incident_id: number;
+  step: number;
+  title: string;
+  rationale: string | null;
+  action: string;
+  params: Record<string, unknown>;
+  risk: RemediationRisk;
+  requires: string | null;
+  status: RemediationPlanStatus;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  auto_executed: boolean;
+  executed_at: string | null;
+  result: Record<string, unknown> | null;
+  verification: "recovered" | "still_failing" | null;
+  created_at: string;
+}
+
+export interface AutopilotPolicy {
+  action: string;
+  enabled: boolean;
+  eligible: boolean;
+  updated_by: string | null;
+  updated_at: string | null;
+}
+
+export interface AutopilotSettings {
+  policies: AutopilotPolicy[];
+  kubernetes: { enabled: boolean; source?: string; reason?: string };
 }
 
 export type RcaConfidence = "high" | "medium" | "low";

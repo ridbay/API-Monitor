@@ -90,3 +90,24 @@ export async function updateServiceNowTicket(sysId: string, state: "In Progress"
     }
   }
 }
+
+// Returns true only when the note reached a live ServiceNow instance; without
+// credentials the ticket is simulated and there is nothing to post to.
+export async function addServiceNowWorkNote(sysId: string, note: string): Promise<boolean> {
+  const instance = process.env.SERVICENOW_INSTANCE || "dev-enterprise.service-now.com";
+  const user = process.env.SERVICENOW_USER;
+  const password = process.env.SERVICENOW_PASSWORD;
+
+  if (!user || !password) return false;
+  try {
+    await axios.patch(
+      `https://${instance}/api/now/table/incident/${sysId}`,
+      { work_notes: note },
+      { auth: { username: user, password }, timeout: 5000 }
+    );
+    return true;
+  } catch (err) {
+    console.warn("ServiceNow work note failed:", err);
+    return false;
+  }
+}

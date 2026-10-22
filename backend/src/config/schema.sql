@@ -108,3 +108,53 @@ CREATE TABLE IF NOT EXISTS rca_reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_rca_reports_incident_id ON rca_reports(incident_id, created_at DESC);
+
+-- Phase 4: Decision layer & remediation
+CREATE SEQUENCE IF NOT EXISTS remediation_ref_seq;
+
+CREATE TABLE IF NOT EXISTS remediation_plans (
+  id SERIAL PRIMARY KEY,
+  reference TEXT NOT NULL UNIQUE DEFAULT ('REC-' || LPAD(nextval('remediation_ref_seq')::text, 4, '0')),
+  incident_id INTEGER NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+  rca_report_id INTEGER REFERENCES rca_reports(id) ON DELETE SET NULL,
+  step INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  rationale TEXT,
+  action TEXT NOT NULL,
+  params JSONB NOT NULL DEFAULT '{}',
+  risk TEXT NOT NULL CHECK (risk IN ('low', 'medium', 'high')),
+  requires TEXT,
+  status TEXT NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING', 'EXECUTING', 'SUCCEEDED', 'FAILED', 'COMPLETED', 'REJECTED', 'SUPERSEDED')),
+  decided_by TEXT,
+  decided_at TIMESTAMPTZ,
+  decision_note TEXT,
+  auto_executed BOOLEAN NOT NULL DEFAULT FALSE,
+  executed_at TIMESTAMPTZ,
+  result JSONB,
+  verification TEXT CHECK (verification IN ('recovered', 'still_failing')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_remediation_plans_incident_id ON remediation_plans(incident_id);
+CREATE INDEX IF NOT EXISTS idx_remediation_plans_status ON remediation_plans(status);
+
+CREATE TABLE IF NOT EXISTS remediation_audit (
+  id SERIAL PRIMARY KEY,
+  plan_id INTEGER NOT NULL REFERENCES remediation_plans(id) ON DELETE CASCADE,
+  incident_id INTEGER NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+  event TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  detail JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_remediation_audit_plan_id ON remediation_audit(plan_id);
+
+CREATE TABLE IF NOT EXISTS autopilot_policies (
+  action TEXT PRIMARY KEY,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_by TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

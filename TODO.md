@@ -46,7 +46,7 @@ EXECUTIVE SUMMARY PAGE"
 | **7** | Unique Reference Incident Management | Incident state engine (`INC-YYYYMMDD-XXXX`), timeline, SLA tracking | High | 🟢 Completed (Phase 2) |
 | **8** | Multi-Channel Notifications & ServiceNow | Email lists, SMS gateways (Twilio/SMPP), two-way ServiceNow Table API | High | 🟢 Completed (Phase 2) |
 | **9** | RCA & Recommendation Engine | Correlative root cause engine + prescriptive actionable runbooks | High | 🟢 Completed (pod signals pending cluster) |
-| **10** | Decision Layer & Auto-Remediation | Approval gate (Human-in-the-Loop) + K8s action runner (pod restart, scale) | High | 🟡 v1 Chat Tools |
+| **10** | Decision Layer & Auto-Remediation | Approval gate (Human-in-the-Loop) + K8s action runner (pod restart, scale) | High | 🟢 Completed (K8s runner awaiting cluster) |
 | **11** | OpenShift/Kubernetes Deployment | Microservices containerized in pods, Helm charts, OpenShift Routes | High | 🟡 Docker Compose ready |
 | **12** | Chatbots / AI Operations Agent | Gemini 3.8 Flash agent with incident summary & remediation tool calling | High | 🟢 Operational (Hybrid) |
 | **13** | Executive Summary Page | C-level KPI dashboard: fleet SLA % vs target, MTTD, MTTR, domain health | High | 🟢 Completed (Phase 1) |
@@ -194,27 +194,30 @@ EXECUTIVE SUMMARY PAGE"
   - [x] RCA panel on the Incidents console; RCA included in chatbot `get_incident_details`
 
 #### 4.2 Decision Layer & Auto-Remediation Engine
-- [ ] Human-in-the-Loop Approval Workflow:
-  - [ ] When failure occurs, generate Remediation Plan with unique ID (`REC-XXXX`)
-  - [ ] Present Approval Card in UI, AI Chatbot, and ServiceNow ticket
-  - [ ] Require Operator confirmation before executing destructive/infrastructure changes
-- [ ] Action Execution Runners:
-  - [ ] Kubernetes API Action Runner (`@kubernetes/client-node`):
-    - [ ] `rolloutRestartDeployment(namespace, name)`
-    - [ ] `scaleDeployment(namespace, name, replicas)`
+- [x] Human-in-the-Loop Approval Workflow (`backend/src/services/remediation.service.ts`, `/api/remediation`):
+  - [x] Each RCA runbook step becomes a Remediation Plan with unique ID (`REC-XXXX`); re-analysis supersedes pending plans
+  - [x] Approval Card in UI (`RemediationPanel.tsx`) and AI Chatbot (`approve_remediation`); plan posted to the ServiceNow ticket as a work note (when credentials are set)
+  - [x] Every execution requires a named operator's approval; chat can't approve high-risk steps; plans on resolved incidents are refused
+  - [ ] Real authentication — approver identity is currently self-declared
+- [x] Action Execution Runners:
+  - [x] Kubernetes API Action Runner (`kubernetesRunner.service.ts`, direct API calls; in-cluster ServiceAccount or `K8S_API_URL`/`K8S_TOKEN`):
+    - [x] `rolloutRestartDeployment(namespace, name)`
+    - [x] `scaleDeployment(namespace, name, delta)` (capped by `K8S_MAX_REPLICAS`)
     - [ ] `deleteFailedPod(namespace, podName)`
+    - [ ] Verified against a real cluster (tested against a mock API server only)
+  - [x] Monitoring runners: re-probe, raise check timeout, reduce check frequency, network path diagnostic
   - [ ] Cache & Network Action Runners: Flush cache, toggle circuit breaker
-- [ ] Verification & Audit Trail:
-  - [ ] Re-probe endpoint post-remediation to verify recovery
-  - [ ] Log full audit record: Triggering incident, proposed action, approver identity, execution result
-- [ ] Auto-Pilot Toggle:
-  - [ ] Allow administrators to mark verified low-risk runbooks as `AUTOPILOT` (zero-touch automated execution)
+- [x] Verification & Audit Trail:
+  - [x] Re-probe endpoint post-remediation to verify recovery (K8s actions after 60s); recovered → incident MITIGATED
+  - [x] Full audit record (`remediation_audit`): triggering incident, proposed action, approver identity, execution result, verification
+- [x] Auto-Pilot Toggle:
+  - [x] Administrators can mark low-risk actions as `AUTOPILOT` (zero-touch execution); medium/high-risk actions are not eligible
 
 #### 4.3 Chatbot & AI Assistant Expansion
 - [ ] Integrate new tool definitions in `backend/src/services/chatTools.ts`:
   - [x] `get_incident_details`: Retrieve incident history and RCA by unique ID (`INC-XXXX`)
   - [ ] `get_service_topology`: Query upstream/downstream dependencies for a service
-  - [ ] `approve_remediation`: Conversational approval of pending remediation runbooks
+  - [x] `approve_remediation` / `list_pending_remediations`: Conversational approval of pending remediation runbooks
   - [x] `run_traceroute`: Dispatch network hop diagnostics on demand
 - [ ] UI enhancements in `frontend/src/components/ChatWidget.tsx` for visual action cards
 
