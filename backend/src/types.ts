@@ -19,6 +19,7 @@ export interface Endpoint {
   timeout: number;
   interval: MonitoringInterval;
   is_active: boolean;
+  source: "MANUAL" | "SOURCE_LOG_DISCOVERED" | string;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

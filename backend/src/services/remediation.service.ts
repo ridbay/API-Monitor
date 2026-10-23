@@ -281,19 +281,22 @@ async function execute(plan: RemediationPlan, actor: string): Promise<Remediatio
   if (outcome.verify) {
     const { endpointId, delayMs } = outcome.verify;
     if (delayMs === 0) return verify(done, endpointId);
-    // In-process timer: a restart in this window skips the follow-up probe,
-    // but the scheduler's regular checks still pick up recovery.
-    setTimeout(() => verify(done, endpointId).catch((e) => console.error(`Verification of ${done.reference} failed:`, e)), delayMs);
+    scheduleVerify(done, endpointId, delayMs);
   } else if (plan.requires === "kubernetes") {
     const endpointId = await incidentEndpointId(plan.incident_id);
-    if (endpointId) {
-      setTimeout(
-        () => verify(done, endpointId).catch((e) => console.error(`Verification of ${done.reference} failed:`, e)),
-        K8S_VERIFY_DELAY_MS
-      );
-    }
+    if (endpointId) scheduleVerify(done, endpointId, K8S_VERIFY_DELAY_MS);
   }
   return done;
+}
+
+// In-process timer: a restart in this window skips the follow-up probe, but
+// the scheduler's regular checks still pick up recovery. Unref'd so a pending
+// verification never holds the process open on shutdown.
+function scheduleVerify(plan: RemediationPlan, endpointId: number, delayMs: number) {
+  setTimeout(
+    () => verify(plan, endpointId).catch((e) => console.error(`Verification of ${plan.reference} failed:`, e)),
+    delayMs
+  ).unref();
 }
 
 async function verify(plan: RemediationPlan, endpointId: number): Promise<RemediationPlan> {

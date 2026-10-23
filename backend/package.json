@@ -10,7 +10,10 @@
     "migrate": "tsx src/config/migrate.ts",
     "seed": "tsx src/config/seed.ts",
     "seed:history": "tsx src/config/seedHistory.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "typecheck:test": "tsc -p tsconfig.test.json",
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "test:unit": "node --import tsx --test test/logParser.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

@@ -24,6 +24,7 @@
   - [Prerequisites](#prerequisites)
   - [Option 1: Docker Compose Deployment (Recommended)](#option-1-docker-compose-deployment-recommended)
   - [Option 2: Local Development Setup](#option-2-local-development-setup)
+- [Running Tests](#-running-tests)
 - [Configuration & Environment Variables](#-configuration--environment-variables)
 - [Inspecting Database & Cache](#-inspecting-database--cache)
 - [Repository Structure](#-repository-structure)
@@ -269,6 +270,22 @@ cd frontend
 npm install
 npm run dev        # Starts Vite dev server on http://localhost:5173
 ```
+
+---
+
+## 🧪 Running Tests
+
+The backend has an integration suite (`backend/test/`) built on Node's test runner. It covers incident detection, root-cause analysis, remediation (with a mock Kubernetes API), log discovery, load-test suites and the HTTP layer, against real Postgres and local stub services.
+
+```bash
+docker compose up -d postgres   # tests need Postgres; nothing else
+cd backend
+npm test                        # full suite (~40s)
+npm run test:unit               # parser/normalizer only, no database
+npm run typecheck:test          # type-check src + tests
+```
+
+Tests use a separate database, `api_monitoring_test` by default (created automatically on the compose Postgres). Override it with `TEST_DATABASE_URL`. Every table in it is truncated between tests, so the suite refuses to run against a database whose name doesn't contain `test`. External integrations (ServiceNow, Kubernetes, Gemini) are disabled for the test run regardless of `backend/.env`.
 
 ---
 
