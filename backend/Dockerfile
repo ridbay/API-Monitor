@@ -20,6 +20,10 @@ RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# Non-root (the image's built-in "node" user). OpenShift substitutes its own
+# arbitrary UID, which works too: nothing here is written at runtime.
+USER 1000
+
 EXPOSE 4001
 
 CMD ["npm", "start"]

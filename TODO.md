@@ -40,14 +40,14 @@ EXECUTIVE SUMMARY PAGE"
 | **1** | Concurrent Bulk Performance Testing | Multi-endpoint load generator with configurable curves ($p50, p95, p99$) | High | 🟢 Completed (single worker; distributed pending) |
 | **2** | Pods & Microservices Observability | Kubernetes API daemon watching pod states, restarts, OOMKilled, limits | High | ⚪ Pending cluster credentials |
 | **3** | Auto-Detect Endpoints & Pods from Logs | Access log harvesting engine parsing URIs, normalizer & auto-catalog | High | 🟢 Completed (HTTP/file ingest; Kafka source pending) |
-| **4** | Kafka Big Log Pipeline $\to$ PostgreSQL | Apache Kafka broker, consumer worker pool, partitioned PostgreSQL tables | High | ⚪ Planned (Phase 3) |
+| **4** | Kafka Big Log Pipeline $\to$ PostgreSQL | Apache Kafka broker, consumer worker pool, partitioned PostgreSQL tables | High | 🟢 Completed |
 | **5** | **Topology Functionalities** | **Interactive service dependency graph with dynamic health & blast radius** | **CRITICAL** | 🟢 Completed (Phase 1) |
 | **6** | Network Traceroutes | Hop-by-hop latency and packet loss diagnostic visualizer | High | 🟢 Completed (Phase 1) |
 | **7** | Unique Reference Incident Management | Incident state engine (`INC-YYYYMMDD-XXXX`), timeline, SLA tracking | High | 🟢 Completed (Phase 2) |
 | **8** | Multi-Channel Notifications & ServiceNow | Email lists, SMS gateways (Twilio/SMPP), two-way ServiceNow Table API | High | 🟢 Completed (Phase 2) |
 | **9** | RCA & Recommendation Engine | Correlative root cause engine + prescriptive actionable runbooks | High | 🟢 Completed (pod signals pending cluster) |
 | **10** | Decision Layer & Auto-Remediation | Approval gate (Human-in-the-Loop) + K8s action runner (pod restart, scale) | High | 🟢 Completed (K8s runner awaiting cluster) |
-| **11** | OpenShift/Kubernetes Deployment | Microservices containerized in pods, Helm charts, OpenShift Routes | High | 🟡 Docker Compose ready |
+| **11** | OpenShift/Kubernetes Deployment | Microservices containerized in pods, Helm charts, OpenShift Routes | High | 🟢 Helm chart (k3s-verified; OpenShift pending) |
 | **12** | Chatbots / AI Operations Agent | Gemini 3.8 Flash agent with incident summary & remediation tool calling | High | 🟢 Operational (Hybrid) |
 | **13** | Executive Summary Page | C-level KPI dashboard: fleet SLA % vs target, MTTD, MTTR, domain health | High | 🟢 Completed (Phase 1) |
 
@@ -145,21 +145,22 @@ EXECUTIVE SUMMARY PAGE"
 > **Focus:** High-throughput streaming log ingestion and zero-touch auto-discovery.
 
 #### 3.1 Apache Kafka Event Streaming Infrastructure
-- [ ] Add Apache Kafka & Zookeeper / KRaft to `docker-compose.yml` and Helm charts
-- [ ] Define Core Kafka Topics:
-  - [ ] `telemetry.raw-logs` (High-volume application & access logs)
-  - [ ] `telemetry.access-logs` (Parsed ingress/router HTTP requests)
-  - [ ] `telemetry.events` (State changes, alerts, auto-discovery events)
-- [ ] Kafka Producer / Log Shipper Configuration:
-  - [ ] Fluentbit / Promtail daemonset forwarding container logs to Kafka
+- [x] Apache Kafka (KRaft) in `docker-compose.yml` (`--profile kafka`) and the Helm chart
+- [x] Core Kafka Topics (created by the app; optional `KAFKA_TOPIC_PREFIX`):
+  - [x] `telemetry.raw-logs` (High-volume application & access logs)
+  - [x] `telemetry.access-logs` (Parsed ingress/router HTTP requests)
+  - [x] `telemetry.events` (incident triggered / status changed, route discovered)
+- [x] Kafka Producer / Log Shipper Configuration:
+  - [x] Fluent Bit DaemonSet (Helm `fluentBit.enabled`) forwarding container logs to Kafka, with Kubernetes metadata
+  - [x] Replay script for demos (`npm run kafka:produce`)
 
 #### 3.2 Kafka Consumer & PostgreSQL Big Data Storage
-- [ ] Kafka Consumer Microservice (`backend/src/services/kafkaConsumer.service.ts`):
-  - [ ] Batch consumer group with configurable concurrency and backpressure
-  - [ ] High-throughput batch insert into PostgreSQL
-- [ ] PostgreSQL Schema Optimization:
-  - [ ] Time-series table partitioning (`access_logs_y2026m10`) or TimescaleDB hypertable
-  - [ ] Retention policies & automated pruning for big logs
+- [x] Kafka Consumer Microservice (`backend/src/consumer.ts`, `logConsumer.service.ts`):
+  - [x] Consumer group with configurable concurrency; bounded fetches + commit-after-write for backpressure (at-least-once)
+  - [x] Batched `unnest` inserts into PostgreSQL; raw rows + catalog updates in one transaction (no double counting on redelivery)
+- [x] PostgreSQL Schema Optimization:
+  - [x] Monthly range partitioning (`access_logs_y2026m10`), partitions created on demand
+  - [x] Retention policy (`ACCESS_LOG_RETENTION_DAYS`) dropping whole partitions daily
 
 #### 3.3 Auto-Detect Endpoints, Pods & Services from Logs (Auto-Add)
 - [x] Access Log Pattern Parser (`backend/src/services/logParser.service.ts`):
@@ -229,20 +230,19 @@ EXECUTIVE SUMMARY PAGE"
 - [ ] UI enhancements in `frontend/src/components/ChatWidget.tsx` for visual action cards
 
 #### 4.4 Microservices Architecture & OpenShift/Kubernetes Deployment
-- [ ] Decouple monolithic backend into microservice container images:
-  - [ ] `api-gateway` (Nginx / OpenShift Router)
-  - [ ] `frontend-dashboard` (React static build)
-  - [ ] `core-api-bff` (BFF & CRUD management)
-  - [ ] `kafka-log-consumer` (High-volume log ingestion & endpoint harvester)
-  - [ ] `synthetics-engine` (Probes & traceroutes)
-  - [ ] `perf-worker` (Concurrent load generator)
-  - [ ] `remediation-engine` (RCA, decision gate, K8s action runner)
-  - [ ] `notification-service` (ServiceNow, SMS, Email dispatcher)
-- [ ] Kubernetes & OpenShift Manifests / Helm Chart:
-  - [ ] Deployments, Services, ConfigMaps, Secrets
-  - [ ] OpenShift Routes & Ingress Controllers
-  - [ ] ServiceAccount with RBAC permissions to inspect and manage pods in target namespaces
-  - [ ] Resource requests & limits, liveness & readiness probes
+- [x] Separate workloads from one backend image (`deploy/helm/api-monitor`):
+  - [x] `frontend-dashboard` (nginx-unprivileged, proxies `/api`)
+  - [x] `core-api-bff` (API Deployment, scalable with sticky sessions)
+  - [x] `synthetics-engine` (dedicated single-replica scheduler Deployment)
+  - [x] `kafka-log-consumer` (consumer Deployment)
+  - [ ] Separate `perf-worker`, `remediation-engine`, `notification-service` images (run inside the API/scheduler today)
+- [x] Kubernetes & OpenShift Manifests / Helm Chart:
+  - [x] Deployments, StatefulSets (dev datastores), Services, ConfigMaps, Secrets (or `existingSecret`)
+  - [x] OpenShift Route (SSE-friendly timeout) & Ingress
+  - [x] ServiceAccount with namespaced RBAC to restart/scale Deployments in target namespaces
+  - [x] Resource requests & limits, startup/liveness/readiness probes (`/health`, `/ready`), advisory-locked migrations in init containers
+  - [x] Validated: `helm lint`, kubeconform across 4 value sets, and a k3s smoke test (`deploy/scripts/k3s-smoke-test.sh`)
+  - [ ] Verified on a real OpenShift cluster
 
 ---
 

@@ -38,15 +38,22 @@ function parseJson(line: string): ParsedRequest | null {
   }
 
   const k8s = (obj.kubernetes ?? {}) as Record<string, any>;
+  const app = str(k8s.labels?.app ?? k8s.labels?.["app.kubernetes.io/name"]);
+  const namespace = str(k8s.namespace_name ?? k8s.namespace?.name);
   const k8sMeta = {
     pod: str(k8s.pod_name ?? k8s.pod?.name),
-    service: str(k8s.labels?.app ?? k8s.labels?.["app.kubernetes.io/name"] ?? k8s.container_name),
+    service: app ?? str(k8s.container_name),
+    // App logs rarely include their own host. A Service is conventionally
+    // named after the app label, so its cluster DNS name is the best guess.
+    host: app && namespace ? `${app}.${namespace}.svc` : undefined,
   };
 
   // Fluent Bit / container runtime wrapper: the request is inside "log".
   if (typeof obj.log === "string" && !pick(obj, "method", "request_method")) {
     const inner = parseLogLine(obj.log);
-    return inner && { ...inner, pod: inner.pod ?? k8sMeta.pod, service: inner.service ?? k8sMeta.service };
+    return (
+      inner && { ...inner, host: inner.host ?? k8sMeta.host, pod: inner.pod ?? k8sMeta.pod, service: inner.service ?? k8sMeta.service }
+    );
   }
 
   const method = str(pick(obj, "method", "request_method", "http.method", "http.request.method", "req.method"))?.toUpperCase();

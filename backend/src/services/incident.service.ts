@@ -1,6 +1,7 @@
 import { pool } from "../config/db";
 import { createServiceNowTicket, updateServiceNowTicket } from "./serviceNow.service";
 import { dispatchIncidentNotifications } from "./notification.service";
+import { publishEvent } from "./kafka.service";
 
 export type IncidentSeverity = "P1" | "P2" | "P3" | "P4";
 export type IncidentStatus =
@@ -167,6 +168,13 @@ export async function createIncident(data: {
     console.warn("Notification dispatch failed:", err);
   }
 
+  publishEvent("incident.triggered", {
+    reference: incident.reference,
+    endpoint_id: incident.endpoint_id,
+    service_name: incident.service_name,
+    severity: incident.severity,
+    title: incident.title,
+  });
   return incident;
 }
 
@@ -225,6 +233,8 @@ export async function updateIncidentStatus(
 
   const { rows: updatedRows } = await pool.query<Incident>(updateSql, values);
   const updated = updatedRows[0];
+
+  publishEvent("incident.status_changed", { reference: updated.reference, from: incident.status, to: newStatus, actor });
 
   // Log timeline event
   await addTimelineEvent(

@@ -1,0 +1,162 @@
+# Default values target a self-contained install on vanilla Kubernetes (kind,
+# k3s, minikube): in-chart Postgres, Redis and Kafka. For OpenShift and
+# production, start from values-openshift.yaml.
+
+image:
+  backend:
+    repository: api-monitor-backend
+    tag: ""            # defaults to the chart appVersion
+  frontend:
+    repository: api-monitor-frontend
+    tag: ""
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# --- API (REST + SSE) -------------------------------------------------------
+api:
+  # Load-test runs and their live SSE streams live in the process that started
+  # them. Keep 1 replica, or rely on sticky sessions (OpenShift Routes are
+  # sticky by default) before scaling out.
+  replicas: 1
+  port: 4001
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { cpu: "1", memory: 768Mi }
+
+# --- Scheduler (health checks, incident detection, retention) -------------
+scheduler:
+  # false: the API pod runs the scheduler (fine for api.replicas: 1).
+  # true: a dedicated single-replica Deployment runs it and the API pods don't,
+  # so checks never run twice. Required when api.replicas > 1.
+  separate: false
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { cpu: "1", memory: 512Mi }
+
+# --- Kafka log consumer (kafka-log-consumer) -------------------------------
+consumer:
+  enabled: true      # only deployed when Kafka is configured (kafka.deploy or kafka.brokers)
+  replicas: 1        # scale up to the topic's partition count
+  port: 4002
+  concurrency: 3
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { cpu: "1", memory: 768Mi }
+
+# --- Dashboard -------------------------------------------------------------
+frontend:
+  replicas: 1
+  port: 8080
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { cpu: 250m, memory: 128Mi }
+
+# --- Application settings (non-secret) -------------------------------------
+config:
+  incidentFailureThreshold: 3
+  incidentRecoveryThreshold: 2
+  accessLogRetentionDays: 30
+  logDiscoveryAutoPromote: false
+  serviceNowInstance: ""
+
+# Secrets. Either set values here (rendered into a Secret) or point
+# existingSecret at one you manage, with the same keys:
+# DATABASE_URL, SERVICENOW_USER, SERVICENOW_PASSWORD, GEMINI_API_KEY,
+# KAFKA_SASL_USERNAME, KAFKA_SASL_PASSWORD.
+secrets:
+  existingSecret: ""
+  serviceNowUser: ""
+  serviceNowPassword: ""
+  geminiApiKey: ""
+
+# --- Auto-remediation ------------------------------------------------------
+remediation:
+  # Lets approved plans roll-restart / scale Deployments via the API pods'
+  # ServiceAccount. Grants are namespaced: a Role + RoleBinding is created in
+  # each target namespace (the installer needs rights there).
+  enabled: false
+  defaultNamespace: production-apps
+  targetNamespaces: []      # e.g. [production-apps, payments]
+  maxReplicas: 10
+
+# --- Datastores ------------------------------------------------------------
+# In-chart Postgres/Redis/Kafka are single-node and meant for dev/demo. They
+# run as fixed UIDs (postgres 999, redis 999, kafka 1000), which OpenShift's
+# restricted SCC rejects — use managed services there (values-openshift.yaml).
+
+postgresql:
+  deploy: true
+  image: postgres:15
+  database: api_monitoring
+  username: postgres
+  password: postgres        # change for anything shared
+  storage: 5Gi
+  storageClass: ""
+
+# Used when postgresql.deploy is false (or set DATABASE_URL in existingSecret).
+externalDatabase:
+  url: ""
+
+redis:
+  deploy: true
+  image: redis:7-alpine
+  url: ""                   # external Redis when deploy is false (optional; caching only)
+
+kafka:
+  deploy: true
+  image: apache/kafka:3.9.0
+  storage: 10Gi
+  storageClass: ""
+  # External cluster (e.g. AMQ Streams/Strimzi) when deploy is false.
+  brokers: ""               # host:port,host:port
+  topicPrefix: ""
+  replicationFactor: 1
+  partitions: 6
+  ssl: false
+  saslMechanism: ""         # plain | scram-sha-256 | scram-sha-512
+  saslUsername: ""
+  saslPassword: ""
+
+# --- Log shipping ----------------------------------------------------------
+# Fluent Bit DaemonSet tailing container logs into telemetry.raw-logs. Needs
+# hostPath access to /var/log; on OpenShift grant the ServiceAccount the
+# privileged SCC (oc adm policy add-scc-to-user privileged -z <release>-fluent-bit).
+fluentBit:
+  enabled: false
+  image: fluent/fluent-bit:3.1.9
+  # Only ship logs from these namespaces (empty = all). Avoids feeding the
+  # platform its own logs and keeps volume down.
+  namespaces: []
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+# --- Exposure --------------------------------------------------------------
+route:
+  enabled: false            # OpenShift Route to the dashboard
+  host: ""                  # empty = cluster default (<name>-<ns>.apps...)
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+ingress:
+  enabled: false
+  className: ""
+  host: api-monitor.local
+  annotations: {}
+  tls: []
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

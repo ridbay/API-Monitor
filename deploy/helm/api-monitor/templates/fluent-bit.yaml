@@ -1,0 +1,156 @@
+{{- if .Values.fluentBit.enabled }}
+{{- if not (include "api-monitor.kafkaEnabled" .) }}
+{{- fail "fluentBit.enabled needs Kafka (kafka.deploy or kafka.brokers)" }}
+{{- end }}
+{{- $fullname := include "api-monitor.fullname" . }}
+{{- $paths := list "/var/log/containers/*.log" }}
+{{- if .Values.fluentBit.namespaces }}
+{{- $paths = list }}
+{{- range .Values.fluentBit.namespaces }}
+{{- $paths = append $paths (printf "/var/log/containers/*_%s_*.log" .) }}
+{{- end }}
+{{- end }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $fullname }}-fluent-bit
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+---
+# The kubernetes filter enriches records with pod name, namespace and labels.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $fullname }}-fluent-bit
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $fullname }}-fluent-bit
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $fullname }}-fluent-bit
+subjects:
+  - kind: ServiceAccount
+    name: {{ $fullname }}-fluent-bit
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}-fluent-bit
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         2
+        Log_Level     info
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+        Health_Check  On
+
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        Path              {{ join "," $paths }}
+        # Don't ship the platform's own logs back into itself.
+        Exclude_Path      /var/log/containers/*_{{ .Release.Namespace }}_*.log
+        multiline.parser  cri, docker
+        DB                /var/lib/fluent-bit/tail.db
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+
+    [FILTER]
+        Name       kubernetes
+        Match      kube.*
+        Merge_Log  Off
+        Keep_Log   On
+        Labels     On
+        Annotations Off
+
+    # Records arrive as {"log": "<line>", "kubernetes": {...}}, which the
+    # consumer's parser unwraps (see logParser.service.ts).
+    [OUTPUT]
+        Name        kafka
+        Match       kube.*
+        Brokers     {{ include "api-monitor.kafkaBrokers" . }}
+        Topics      {{ .Values.kafka.topicPrefix }}telemetry.raw-logs
+        Format      json
+        rdkafka.queue.buffering.max.ms  500
+        {{- if .Values.kafka.saslMechanism }}
+        rdkafka.security.protocol  {{ ternary "SASL_SSL" "SASL_PLAINTEXT" .Values.kafka.ssl }}
+        rdkafka.sasl.mechanisms    {{ .Values.kafka.saslMechanism | upper }}
+        rdkafka.sasl.username      ${KAFKA_SASL_USERNAME}
+        rdkafka.sasl.password      ${KAFKA_SASL_PASSWORD}
+        {{- else if .Values.kafka.ssl }}
+        rdkafka.security.protocol  SSL
+        {{- end }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $fullname }}-fluent-bit
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fluent-bit
+spec:
+  selector:
+    matchLabels:
+      {{- include "api-monitor.selector" (dict "ctx" $ "component" "fluent-bit") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "api-monitor.selector" (dict "ctx" $ "component" "fluent-bit") | nindent 8 }}
+      annotations:
+        checksum/config: {{ .Values.fluentBit | toJson | sha256sum }}
+    spec:
+      serviceAccountName: {{ $fullname }}-fluent-bit
+      tolerations:
+        - operator: Exists      # every node, including tainted ones
+      containers:
+        - name: fluent-bit
+          image: {{ .Values.fluentBit.image }}
+          {{- if .Values.kafka.saslMechanism }}
+          env:
+            - name: KAFKA_SASL_USERNAME
+              valueFrom: { secretKeyRef: { name: {{ include "api-monitor.secretName" . }}, key: KAFKA_SASL_USERNAME } }
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "api-monitor.secretName" . }}, key: KAFKA_SASL_PASSWORD } }
+          {{- end }}
+          ports:
+            - { name: http, containerPort: 2020 }
+          livenessProbe:
+            httpGet: { path: /api/v1/health, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.fluentBit.resources | nindent 12 }}
+          # Reading node log files needs root on most distributions.
+          securityContext:
+            runAsUser: 0
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL], add: [DAC_READ_SEARCH] }
+          volumeMounts:
+            - { name: config, mountPath: /fluent-bit/etc/fluent-bit.conf, subPath: fluent-bit.conf }
+            - { name: varlog, mountPath: /var/log, readOnly: true }
+            - { name: state, mountPath: /var/lib/fluent-bit }
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $fullname }}-fluent-bit
+        - name: varlog
+          hostPath: { path: /var/log }
+        - name: state
+          hostPath: { path: /var/lib/fluent-bit/{{ $fullname }}, type: DirectoryOrCreate }
+{{- end }}

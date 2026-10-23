@@ -1,0 +1,63 @@
+{{- if and .Values.consumer.enabled (include "api-monitor.kafkaEnabled" .) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api-monitor.fullname" . }}-consumer
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: consumer
+spec:
+  replicas: {{ .Values.consumer.replicas }}
+  selector:
+    matchLabels:
+      {{- include "api-monitor.selector" (dict "ctx" $ "component" "consumer") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "api-monitor.selector" (dict "ctx" $ "component" "consumer") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") $ | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") $ | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      {{- include "api-monitor.podCommon" . | nindent 6 }}
+      initContainers:
+        - name: migrate
+          image: {{ include "api-monitor.backendImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["node", "dist/config/migrate.js"]
+          {{- include "api-monitor.backendEnv" . | nindent 10 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+      containers:
+        - name: consumer
+          image: {{ include "api-monitor.backendImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["node", "dist/consumer.js"]
+          {{- include "api-monitor.backendEnv" . | nindent 10 }}
+          env:
+            - name: CONSUMER_PORT
+              value: {{ .Values.consumer.port | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.consumer.port }}
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 15
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.consumer.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

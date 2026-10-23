@@ -13,7 +13,10 @@ async function main() {
   }
 
   await recoverInterruptedRuns().catch((err) => console.warn("Could not recover interrupted load test runs:", err));
-  startScheduler();
+  // With several API replicas, exactly one must run the scheduler; the Helm
+  // chart sets SCHEDULER_ENABLED=false on the API and runs a separate one.
+  if (process.env.SCHEDULER_ENABLED !== "false") startScheduler();
+  else console.log("Scheduler disabled on this instance (SCHEDULER_ENABLED=false).");
 
   app.listen(PORT, () => {
     console.log(`API monitoring backend listening on http://localhost:${PORT}`);

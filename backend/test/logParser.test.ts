@@ -44,6 +44,11 @@ describe("parseLogLine", () => {
       '{"http":{"method":"DELETE","url":"https://api.example.com/v1/sessions/8f14e45fceea167a5a36dedd4bea2543","status_code":204},"duration_ms":8}',
       { method: "DELETE", host: "api.example.com", scheme: "https", status: 204 },
     ],
+    [
+      "Fluent Bit wrapper without a host falls back to <app>.<namespace>.svc",
+      '{"log":"GET /stock/4 200 2.0 ms - 1","kubernetes":{"pod_name":"stock-1","namespace_name":"shop","labels":{"app":"stock"}}}',
+      { host: "stock.shop.svc", service: "stock", pod: "stock-1", path: "/stock/4" },
+    ],
     ["morgan dev format", "GET /api/users/12 304 1.234 ms - -", { method: "GET", path: "/api/users/12", status: 304 }],
   ];
 

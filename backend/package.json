@@ -13,7 +13,9 @@
     "lint": "tsc --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json",
     "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
-    "test:unit": "node --import tsx --test test/logParser.test.ts"
+    "test:unit": "node --import tsx --test test/logParser.test.ts",
+    "kafka:produce": "tsx src/scripts/produceLogs.ts",
+    "consumer": "tsx src/consumer.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
@@ -22,6 +24,7 @@
     "csv-parse": "^7.0.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "kafkajs": "^2.2.4",
     "multer": "^2.0.1",
     "node-cron": "^4.6.0",
     "pg": "^8.13.1",

@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { PoolClient } from "pg";
 import { pool } from "../config/db";
 import { HttpError } from "../middleware/errorHandler";
 import { endpointRepository } from "../repositories/endpoint.repository";
@@ -7,6 +8,8 @@ import { isInternalHost } from "../utils/hosts";
 import { createEndpointSchema } from "./endpoint.service";
 import { isStaticAsset, normalizePath, parseLogLine, ParsedRequest } from "./logParser.service";
 import { executeCheck } from "./monitoring.service";
+import { insertAccessLogs, prepareAccessLogs } from "./accessLogStore.service";
+import { publishEvent } from "./kafka.service";
 
 export type DiscoveredRouteStatus = "NEW" | "MONITORED" | "PROMOTED" | "IGNORED";
 
@@ -67,6 +70,8 @@ const BASELINE_CONCURRENCY = 5;
 const BASELINE_TIMEOUT_MS = 5000;
 // Upper bounds (ms) for latency_buckets; the last bucket is everything above 10s.
 const LATENCY_BOUNDS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, Infinity];
+const DEADLOCK = "40P01";
+const MAX_DEADLOCK_RETRIES = 3;
 
 interface Aggregate {
   scheme: string;
@@ -98,55 +103,136 @@ export async function ingestLogs(
   if (lines.length > MAX_LINES_PER_BATCH) {
     throw new HttpError(413, `At most ${MAX_LINES_PER_BATCH} lines per batch (got ${lines.length})`);
   }
+  return recordRequests(parseLines(lines, defaults), source, options);
+}
 
+// A request with ingest defaults applied: everything needed to store it and
+// to aggregate it into a route.
+export interface ResolvedRequest extends ParsedRequest {
+  host: string;
+  scheme: string;
+  template: string;
+  seenAt: Date;
+}
+
+export interface ParsedBatch {
+  requests: ResolvedRequest[];
+  linesReceived: number;
+  staticSkipped: number;
+  withoutHost: number;
+  unparsed: number;
+  unparsedSamples: string[];
+}
+
+export function parseLines(lines: string[], defaults: IngestDefaults = {}): ParsedBatch {
   const now = new Date();
-  const aggregates = new Map<string, Aggregate>();
-  const counts = { parsed: 0, static: 0, noHost: 0, unparsed: 0 };
-  const unparsedSamples: string[] = [];
+  const batch: ParsedBatch = { requests: [], linesReceived: lines.length, staticSkipped: 0, withoutHost: 0, unparsed: 0, unparsedSamples: [] };
   const defaultHost = defaults.host?.trim().toLowerCase() || undefined;
 
   for (const line of lines) {
     if (!line.trim()) continue;
     const req = parseLogLine(line);
     if (!req) {
-      counts.unparsed++;
-      if (unparsedSamples.length < 5) unparsedSamples.push(line.slice(0, 300));
+      batch.unparsed++;
+      if (batch.unparsedSamples.length < 5) batch.unparsedSamples.push(line.slice(0, 300));
       continue;
     }
     if (isStaticAsset(req.path)) {
-      counts.static++;
+      batch.staticSkipped++;
       continue;
     }
     const host = req.host ?? defaultHost;
     if (!host) {
-      counts.noHost++;
+      batch.withoutHost++;
       continue;
     }
-    counts.parsed++;
-    accumulate(aggregates, req, host, defaults, now);
+    batch.requests.push({
+      ...req,
+      host,
+      scheme: (req.scheme ?? defaults.scheme ?? (isInternalHost(host) ? "http" : "https")).toLowerCase(),
+      template: normalizePath(req.path),
+      service: req.service ?? defaults.service,
+      pod: req.pod ?? defaults.pod,
+      seenAt: req.timestamp ?? now,
+    });
   }
+  return batch;
+}
 
-  const { routes, rejected } = await upsertAggregates([...aggregates.values()]);
+// Merges batches parsed with different defaults (e.g. Kafka messages from
+// several sources) so they can be recorded in one pass.
+export function mergeBatches(batches: ParsedBatch[]): ParsedBatch {
+  return batches.reduce<ParsedBatch>(
+    (acc, b) => ({
+      requests: acc.requests.concat(b.requests),
+      linesReceived: acc.linesReceived + b.linesReceived,
+      staticSkipped: acc.staticSkipped + b.staticSkipped,
+      withoutHost: acc.withoutHost + b.withoutHost,
+      unparsed: acc.unparsed + b.unparsed,
+      unparsedSamples: acc.unparsedSamples.concat(b.unparsedSamples).slice(0, 5),
+    }),
+    { requests: [], linesReceived: 0, staticSkipped: 0, withoutHost: 0, unparsed: 0, unparsedSamples: [] }
+  );
+}
+
+// Stores the raw requests and folds them into the route catalog.
+//
+// Raw rows, catalog updates and the batch record commit together, so a failed
+// batch leaves nothing behind and a retry (e.g. Kafka redelivery) doesn't
+// double-count. Concurrent batches touching the same routes can still
+// deadlock in rare interleavings; those are retried.
+export async function recordRequests(
+  batch: ParsedBatch,
+  source: string,
+  options: { waitForBaseline?: boolean } = {}
+): Promise<IngestResult> {
+  const accessLogRows = await prepareAccessLogs(batch.requests);
+  const aggregates = new Map<string, Aggregate>();
+  for (const req of batch.requests) accumulate(aggregates, req);
+  const parsed = batch.requests.length;
+
+  let outcome: { routes: Array<{ route: DiscoveredRoute; inserted: boolean }>; rejected: number; batchId: number } | undefined;
+  for (let attempt = 1; !outcome; attempt++) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await insertAccessLogs(client, accessLogRows, source);
+      const { routes, rejected } = await upsertAggregates(client, [...aggregates.values()]);
+      const newCount = routes.filter((r) => r.inserted).length;
+      const { rows: [row] } = await client.query<{ id: number }>(
+        `INSERT INTO log_ingest_batches (source, lines_received, lines_parsed, lines_skipped, routes_seen, routes_new)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [source, batch.linesReceived, parsed, batch.staticSkipped + batch.withoutHost + batch.unparsed, routes.length, newCount]
+      );
+      await client.query("COMMIT");
+      outcome = { routes, rejected, batchId: row.id };
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      if ((err as { code?: string }).code !== DEADLOCK || attempt >= MAX_DEADLOCK_RETRIES) throw err;
+      await new Promise((r) => setTimeout(r, 25 * attempt + Math.random() * 50));
+    } finally {
+      client.release();
+    }
+  }
+  const { routes, rejected, batchId } = outcome;
   const newRoutes = routes.filter((r) => r.inserted).map((r) => r.route);
 
-  const { rows: [batch] } = await pool.query<{ id: number }>(
-    `INSERT INTO log_ingest_batches (source, lines_received, lines_parsed, lines_skipped, routes_seen, routes_new)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [source, lines.length, counts.parsed, counts.static + counts.noHost + counts.unparsed, routes.length, newRoutes.length]
-  );
+  for (const route of newRoutes) {
+    publishEvent("route.discovered", { id: route.id, host: route.host, method: route.method, path_template: route.path_template, status: route.status });
+  }
 
   const baseline = probeBaselines(newRoutes.filter((r) => r.status === "NEW" && r.method === "GET"));
   if (options.waitForBaseline) await baseline;
   else baseline.catch((err) => console.error("Baseline probing failed:", err));
 
   return {
-    batch_id: batch.id,
-    lines_received: lines.length,
-    lines_parsed: counts.parsed,
-    lines_skipped_static: counts.static,
-    lines_without_host: counts.noHost,
-    lines_unparsed: counts.unparsed,
-    unparsed_samples: unparsedSamples,
+    batch_id: batchId,
+    lines_received: batch.linesReceived,
+    lines_parsed: parsed,
+    lines_skipped_static: batch.staticSkipped,
+    lines_without_host: batch.withoutHost,
+    lines_unparsed: batch.unparsed,
+    unparsed_samples: batch.unparsedSamples,
     routes_seen: routes.length,
     routes_new: newRoutes.length,
     routes_rejected: rejected,
@@ -154,17 +240,15 @@ export async function ingestLogs(
   };
 }
 
-function accumulate(aggregates: Map<string, Aggregate>, req: ParsedRequest, host: string, defaults: IngestDefaults, now: Date) {
-  const template = normalizePath(req.path);
-  const key = `${host}|${req.method}|${template}`;
-  const seenAt = req.timestamp ?? now;
+function accumulate(aggregates: Map<string, Aggregate>, req: ResolvedRequest) {
+  const key = `${req.host}|${req.method}|${req.template}`;
   let agg = aggregates.get(key);
   if (!agg) {
     agg = {
-      scheme: (req.scheme ?? defaults.scheme ?? (isInternalHost(host) ? "http" : "https")).toLowerCase(),
-      host,
+      scheme: req.scheme,
+      host: req.host,
       method: req.method,
-      template,
+      template: req.template,
       samplePath: req.path,
       sampleOk: req.status < 400,
       pods: new Set(),
@@ -174,8 +258,8 @@ function accumulate(aggregates: Map<string, Aggregate>, req: ParsedRequest, host
       latencySum: 0,
       latencySamples: 0,
       buckets: LATENCY_BOUNDS.map(() => 0),
-      firstSeen: seenAt,
-      lastSeen: seenAt,
+      firstSeen: req.seenAt,
+      lastSeen: req.seenAt,
     };
     aggregates.set(key, agg);
   }
@@ -183,9 +267,8 @@ function accumulate(aggregates: Map<string, Aggregate>, req: ParsedRequest, host
   agg.requests++;
   if (req.status >= 500) agg.errors++;
   agg.statusCounts[req.status] = (agg.statusCounts[req.status] ?? 0) + 1;
-  agg.service ??= req.service ?? defaults.service;
-  const pod = req.pod ?? defaults.pod;
-  if (pod && agg.pods.size < 50) agg.pods.add(pod);
+  agg.service ??= req.service;
+  if (req.pod && agg.pods.size < 50) agg.pods.add(req.pod);
   // Prefer a sample that got a successful response; it's the better URL to probe.
   if (!agg.sampleOk && req.status < 400) {
     agg.samplePath = req.path;
@@ -196,15 +279,15 @@ function accumulate(aggregates: Map<string, Aggregate>, req: ParsedRequest, host
     agg.latencySamples++;
     agg.buckets[LATENCY_BOUNDS.findIndex((bound) => req.latencyMs! <= bound)]++;
   }
-  if (seenAt < agg.firstSeen) agg.firstSeen = seenAt;
-  if (seenAt > agg.lastSeen) agg.lastSeen = seenAt;
+  if (req.seenAt < agg.firstSeen) agg.firstSeen = req.seenAt;
+  if (req.seenAt > agg.lastSeen) agg.lastSeen = req.seenAt;
 }
 
-async function upsertAggregates(aggregates: Aggregate[]) {
+async function upsertAggregates(client: PoolClient, aggregates: Aggregate[]) {
   if (!aggregates.length) return { routes: [] as Array<{ route: DiscoveredRoute; inserted: boolean }>, rejected: 0 };
 
   const hosts = [...new Set(aggregates.map((a) => a.host))];
-  const { rows: existing } = await pool.query<{ host: string; method: string; path_template: string }>(
+  const { rows: existing } = await client.query<{ host: string; method: string; path_template: string }>(
     `SELECT host, method, path_template FROM discovered_routes WHERE host = ANY($1)`,
     [hosts]
   );
@@ -213,66 +296,67 @@ async function upsertAggregates(aggregates: Aggregate[]) {
   for (const r of existing) perHost.set(r.host, (perHost.get(r.host) ?? 0) + 1);
   const monitored = await monitoredRouteKeys();
 
-  const client = await pool.connect();
-  const routes: Array<{ route: DiscoveredRoute; inserted: boolean }> = [];
+  // Decide the per-host cap busiest-first, so it keeps the routes that matter most...
+  const accepted: Aggregate[] = [];
   let rejected = 0;
-  try {
-    await client.query("BEGIN");
-    // Busiest first, so the per-host cap keeps the routes that matter most.
-    for (const agg of aggregates.sort((a, b) => b.requests - a.requests)) {
-      const key = `${agg.host}|${agg.method}|${agg.template}`;
-      if (!known.has(key)) {
-        const count = perHost.get(agg.host) ?? 0;
-        if (count >= MAX_ROUTES_PER_HOST) {
-          rejected++;
-          continue;
-        }
-        perHost.set(agg.host, count + 1);
+  for (const agg of [...aggregates].sort((a, b) => b.requests - a.requests)) {
+    const key = `${agg.host}|${agg.method}|${agg.template}`;
+    if (!known.has(key)) {
+      const count = perHost.get(agg.host) ?? 0;
+      if (count >= MAX_ROUTES_PER_HOST) {
+        rejected++;
+        continue;
       }
-      const endpointId = monitored.get(key) ?? null;
-      const { rows } = await client.query(
-        `INSERT INTO discovered_routes (
-           scheme, host, method, path_template, sample_path, service_name, pods,
-           request_count, error_count, status_counts, latency_sum_ms, latency_samples, latency_buckets,
-           status, endpoint_id, first_seen, last_seen
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-         ON CONFLICT (host, method, path_template) DO UPDATE SET
-           request_count = discovered_routes.request_count + EXCLUDED.request_count,
-           error_count = discovered_routes.error_count + EXCLUDED.error_count,
-           status_counts = (
-             SELECT jsonb_object_agg(k, COALESCE((discovered_routes.status_counts->>k)::bigint, 0)
-                                      + COALESCE((EXCLUDED.status_counts->>k)::bigint, 0))
-             FROM (SELECT jsonb_object_keys(discovered_routes.status_counts)
-                   UNION SELECT jsonb_object_keys(EXCLUDED.status_counts)) AS keys(k)
-           ),
-           latency_sum_ms = discovered_routes.latency_sum_ms + EXCLUDED.latency_sum_ms,
-           latency_samples = discovered_routes.latency_samples + EXCLUDED.latency_samples,
-           latency_buckets = ARRAY(
-             SELECT a + b FROM unnest(discovered_routes.latency_buckets, EXCLUDED.latency_buckets)
-               WITH ORDINALITY AS t(a, b, i) ORDER BY i
-           ),
-           pods = ARRAY(SELECT DISTINCT unnest(discovered_routes.pods || EXCLUDED.pods) LIMIT 50),
-           service_name = COALESCE(discovered_routes.service_name, EXCLUDED.service_name),
-           first_seen = LEAST(discovered_routes.first_seen, EXCLUDED.first_seen),
-           last_seen = GREATEST(discovered_routes.last_seen, EXCLUDED.last_seen)
-         RETURNING *, (xmax = 0) AS inserted`,
-        [
-          agg.scheme, agg.host, agg.method, agg.template, agg.samplePath, agg.service ?? null, [...agg.pods],
-          agg.requests, agg.errors, JSON.stringify(agg.statusCounts), agg.latencySum, agg.latencySamples, agg.buckets,
-          endpointId ? "MONITORED" : "NEW", endpointId, agg.firstSeen, agg.lastSeen,
-        ]
-      );
-      const { inserted, ...row } = rows[0];
-      routes.push({ route: present(row), inserted });
+      perHost.set(agg.host, count + 1);
     }
-    await client.query("COMMIT");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
+    accepted.push(agg);
+  }
+  // ...but write in key order, so concurrent batches lock rows in the same order.
+  accepted.sort((a, b) => routeKey(a).localeCompare(routeKey(b)));
+
+  const routes: Array<{ route: DiscoveredRoute; inserted: boolean }> = [];
+  for (const agg of accepted) {
+    const endpointId = monitored.get(routeKey(agg)) ?? null;
+    const { rows } = await client.query(
+      `INSERT INTO discovered_routes (
+         scheme, host, method, path_template, sample_path, service_name, pods,
+         request_count, error_count, status_counts, latency_sum_ms, latency_samples, latency_buckets,
+         status, endpoint_id, first_seen, last_seen
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+       ON CONFLICT (host, method, path_template) DO UPDATE SET
+         request_count = discovered_routes.request_count + EXCLUDED.request_count,
+         error_count = discovered_routes.error_count + EXCLUDED.error_count,
+         status_counts = (
+           SELECT jsonb_object_agg(k, COALESCE((discovered_routes.status_counts->>k)::bigint, 0)
+                                    + COALESCE((EXCLUDED.status_counts->>k)::bigint, 0))
+           FROM (SELECT jsonb_object_keys(discovered_routes.status_counts)
+                 UNION SELECT jsonb_object_keys(EXCLUDED.status_counts)) AS keys(k)
+         ),
+         latency_sum_ms = discovered_routes.latency_sum_ms + EXCLUDED.latency_sum_ms,
+         latency_samples = discovered_routes.latency_samples + EXCLUDED.latency_samples,
+         latency_buckets = ARRAY(
+           SELECT a + b FROM unnest(discovered_routes.latency_buckets, EXCLUDED.latency_buckets)
+             WITH ORDINALITY AS t(a, b, i) ORDER BY i
+         ),
+         pods = ARRAY(SELECT DISTINCT unnest(discovered_routes.pods || EXCLUDED.pods) LIMIT 50),
+         service_name = COALESCE(discovered_routes.service_name, EXCLUDED.service_name),
+         first_seen = LEAST(discovered_routes.first_seen, EXCLUDED.first_seen),
+         last_seen = GREATEST(discovered_routes.last_seen, EXCLUDED.last_seen)
+       RETURNING *, (xmax = 0) AS inserted`,
+      [
+        agg.scheme, agg.host, agg.method, agg.template, agg.samplePath, agg.service ?? null, [...agg.pods],
+        agg.requests, agg.errors, JSON.stringify(agg.statusCounts), agg.latencySum, agg.latencySamples, agg.buckets,
+        endpointId ? "MONITORED" : "NEW", endpointId, agg.firstSeen, agg.lastSeen,
+      ]
+    );
+    const { inserted, ...row } = rows[0];
+    routes.push({ route: present(row), inserted });
   }
   return { routes, rejected };
+}
+
+function routeKey(agg: Aggregate): string {
+  return `${agg.host}|${agg.method}|${agg.template}`;
 }
 
 // host|method|template for every monitored endpoint, so routes we already

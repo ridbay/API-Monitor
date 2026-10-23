@@ -1,0 +1,32 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} installed as "{{ .Release.Name }}" in namespace {{ .Release.Namespace }}.
+
+Dashboard:
+{{- if .Values.route.enabled }}
+  oc get route {{ include "api-monitor.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.host}'
+{{- else if .Values.ingress.enabled }}
+  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "api-monitor.fullname" . }}-frontend 8088:80
+  then open http://localhost:8088
+{{- end }}
+
+Components:
+  api        {{ .Values.api.replicas }} replica(s){{ if not .Values.scheduler.separate }}, running the scheduler{{ end }}
+{{- if .Values.scheduler.separate }}
+  scheduler  1 replica (dedicated)
+{{- end }}
+{{- if and .Values.consumer.enabled (include "api-monitor.kafkaEnabled" .) }}
+  consumer   {{ .Values.consumer.replicas }} replica(s), Kafka at {{ include "api-monitor.kafkaBrokers" . }}
+{{- else }}
+  consumer   not deployed (no Kafka configured); logs can still be ingested over HTTP
+{{- end }}
+{{- if .Values.fluentBit.enabled }}
+  fluent-bit DaemonSet shipping container logs to {{ .Values.kafka.topicPrefix }}telemetry.raw-logs
+{{- end }}
+
+Auto-remediation: {{ if .Values.remediation.enabled }}enabled for namespaces {{ join ", " .Values.remediation.targetNamespaces | default "(none — set remediation.targetNamespaces)" }}{{ else }}disabled (plans can be approved, Kubernetes actions are refused){{ end }}
+{{- if or .Values.postgresql.deploy .Values.kafka.deploy }}
+
+Note: in-chart {{ if .Values.postgresql.deploy }}Postgres {{ end }}{{ if .Values.kafka.deploy }}Kafka {{ end }}are single-node dev datastores.
+Use managed services for production (see values-openshift.yaml).
+{{- end }}

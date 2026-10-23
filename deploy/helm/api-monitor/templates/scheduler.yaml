@@ -1,0 +1,20 @@
+{{- if .Values.scheduler.separate }}
+# Exactly one scheduler: Recreate stops the old pod before starting the new
+# one, so a rollout never runs checks twice.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api-monitor.fullname" . }}-scheduler
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "api-monitor.selector" (dict "ctx" $ "component" "scheduler") | nindent 6 }}
+  template:
+    {{- include "api-monitor.backendPod" (dict "ctx" $ "component" "scheduler" "scheduler" "true" "resources" .Values.scheduler.resources) | nindent 4 }}
+{{- end }}

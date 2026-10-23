@@ -3,6 +3,7 @@ import { endpointRepository } from "../repositories/endpoint.repository";
 import { statisticsRepository } from "../repositories/statistics.repository";
 import { executeCheck } from "../services/monitoring.service";
 import { INTERVAL_MS } from "../types";
+import { maintainPartitions } from "../services/accessLogStore.service";
 
 async function tick() {
   const endpoints = await endpointRepository.findActive();
@@ -29,5 +30,11 @@ export function startScheduler() {
     },
     { noOverlap: true }
   );
+  // Access-log retention: pre-create next month's partition, drop expired months.
+  cron.schedule("15 3 * * *", () => {
+    maintainPartitions()
+      .then(({ dropped }) => dropped.length && console.log(`Dropped expired access-log partitions: ${dropped.join(", ")}`))
+      .catch((err) => console.error("Access-log partition maintenance failed:", err));
+  });
   console.log("Monitoring scheduler started (checks every minute for due endpoints).");
 }

@@ -1,0 +1,47 @@
+# ServiceAccount for the API and scheduler pods. Its token is only mounted when
+# remediation is enabled, since that's the only thing that talks to the
+# Kubernetes API.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "api-monitor.fullname" . }}
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+automountServiceAccountToken: {{ .Values.remediation.enabled }}
+{{- if .Values.remediation.enabled }}
+{{- range $ns := .Values.remediation.targetNamespaces }}
+---
+# Exactly what kubernetesRunner.service.ts needs: patch a Deployment's pod
+# template (rollout restart) and read/patch its scale subresource.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "api-monitor.fullname" $ }}-remediation
+  namespace: {{ $ns }}
+  labels:
+    {{- include "api-monitor.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "api-monitor.fullname" $ }}-remediation
+  namespace: {{ $ns }}
+  labels:
+    {{- include "api-monitor.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "api-monitor.fullname" $ }}-remediation
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "api-monitor.fullname" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

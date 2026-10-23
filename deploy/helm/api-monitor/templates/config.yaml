@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "api-monitor.fullname" . }}-config
+  labels:
+    {{- include "api-monitor.labels" . | nindent 4 }}
+data:
+  NODE_ENV: production
+  PORT: {{ .Values.api.port | quote }}
+  REDIS_URL: {{ include "api-monitor.redisUrl" . | quote }}
+  INCIDENT_FAILURE_THRESHOLD: {{ .Values.config.incidentFailureThreshold | quote }}
+  INCIDENT_RECOVERY_THRESHOLD: {{ .Values.config.incidentRecoveryThreshold | quote }}
+  ACCESS_LOG_RETENTION_DAYS: {{ .Values.config.accessLogRetentionDays | quote }}
+  LOG_DISCOVERY_AUTO_PROMOTE: {{ .Values.config.logDiscoveryAutoPromote | quote }}
+  SERVICENOW_INSTANCE: {{ .Values.config.serviceNowInstance | quote }}
+  K8S_REMEDIATION_ENABLED: {{ .Values.remediation.enabled | quote }}
+  K8S_DEFAULT_NAMESPACE: {{ .Values.remediation.defaultNamespace | quote }}
+  K8S_MAX_REPLICAS: {{ .Values.remediation.maxReplicas | quote }}
+  {{- if include "api-monitor.kafkaEnabled" . }}
+  KAFKA_BROKERS: {{ include "api-monitor.kafkaBrokers" . | quote }}
+  KAFKA_TOPIC_PREFIX: {{ .Values.kafka.topicPrefix | quote }}
+  KAFKA_REPLICATION_FACTOR: {{ .Values.kafka.replicationFactor | quote }}
+  KAFKA_LOG_PARTITIONS: {{ .Values.kafka.partitions | quote }}
+  KAFKA_CONSUMER_CONCURRENCY: {{ .Values.consumer.concurrency | quote }}
+  KAFKA_SSL: {{ .Values.kafka.ssl | quote }}
+  {{- with .Values.kafka.saslMechanism }}
+  KAFKA_SASL_MECHANISM: {{ . | quote }}
+  {{- end }}
+  {{- end }}

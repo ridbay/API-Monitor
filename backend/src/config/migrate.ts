@@ -6,7 +6,15 @@ async function migrate(retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
     try {
       const sql = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf-8");
-      await pool.query(sql);
+      // Replicas starting together would otherwise race on CREATE statements.
+      const client = await pool.connect();
+      try {
+        await client.query("SELECT pg_advisory_lock(72201)");
+        await client.query(sql);
+      } finally {
+        await client.query("SELECT pg_advisory_unlock(72201)").catch(() => {});
+        client.release();
+      }
       console.log("Migration complete.");
       await pool.end();
       return;

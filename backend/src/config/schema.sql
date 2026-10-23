@@ -229,3 +229,22 @@ CREATE TABLE IF NOT EXISTS load_test_runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_load_test_runs_suite_id ON load_test_runs(suite_id, started_at DESC);
+
+-- Phase 3: Raw access logs (Kafka / ingest API), partitioned by month.
+-- Partitions (access_logs_yYYYYmMM) are created on demand and dropped by the
+-- retention job in accessLogStore.service.ts.
+CREATE TABLE IF NOT EXISTS access_logs (
+  ts TIMESTAMPTZ NOT NULL,
+  host TEXT NOT NULL,
+  method TEXT NOT NULL,
+  path TEXT NOT NULL,
+  path_template TEXT NOT NULL,
+  status SMALLINT NOT NULL,
+  latency_ms INTEGER,
+  service TEXT,
+  pod TEXT,
+  source TEXT NOT NULL
+) PARTITION BY RANGE (ts);
+
+CREATE INDEX IF NOT EXISTS idx_access_logs_ts ON access_logs (ts);
+CREATE INDEX IF NOT EXISTS idx_access_logs_route ON access_logs (host, path_template, ts);

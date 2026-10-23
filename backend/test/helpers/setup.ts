@@ -15,6 +15,8 @@ for (const key of [
   "LOG_DISCOVERY_AUTO_PROMOTE",
   "GEMINI_API_KEY",
   "REDIS_URL",
+  // Kafka stays off unless a test opts in (see logPipeline.test.ts).
+  "KAFKA_BROKERS",
 ]) {
   process.env[key] = "";
 }

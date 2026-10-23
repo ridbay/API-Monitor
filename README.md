@@ -24,6 +24,8 @@
   - [Prerequisites](#prerequisites)
   - [Option 1: Docker Compose Deployment (Recommended)](#option-1-docker-compose-deployment-recommended)
   - [Option 2: Local Development Setup](#option-2-local-development-setup)
+- [Kafka Log Pipeline](#-kafka-log-pipeline-optional)
+- [Kubernetes & OpenShift Deployment](#️-kubernetes--openshift-deployment)
 - [Running Tests](#-running-tests)
 - [Configuration & Environment Variables](#-configuration--environment-variables)
 - [Inspecting Database & Cache](#-inspecting-database--cache)
@@ -273,6 +275,54 @@ npm run dev        # Starts Vite dev server on http://localhost:5173
 
 ---
 
+## 📨 Kafka Log Pipeline (optional)
+
+Access logs can be streamed through Kafka instead of (or as well as) the HTTP ingest API. The consumer stores every request in a month-partitioned `access_logs` table (`access_logs_y2026m10`, …) and feeds endpoint discovery.
+
+```bash
+# Kafka (KRaft) + the log consumer, alongside the normal stack
+KAFKA_BROKERS=kafka:9092 docker compose --profile kafka up -d
+
+# Replay the sample log into telemetry.raw-logs from your machine
+cd backend
+KAFKA_BROKERS=localhost:29092 npm run kafka:produce -- \
+  --file ../dev/sample-logs/access-log-sample.txt --rate 500 --host inventory.prod.svc
+
+curl localhost:4002/ready   # consumer stats: messages, requests recorded, last error
+```
+
+| Topic | Contents |
+|---|---|
+| `telemetry.raw-logs` | One log line per message, any supported format. Headers `host`/`service`/`pod` fill in what a line lacks. |
+| `telemetry.access-logs` | Pre-parsed JSON request records. |
+| `telemetry.events` | Published by the API: `incident.triggered`, `incident.status_changed`, `route.discovered`. |
+
+Delivery is at-least-once: each chunk's raw rows and catalog updates commit in one transaction before its offsets are committed. Retention (`ACCESS_LOG_RETENTION_DAYS`, default 30) drops whole monthly partitions daily. `KAFKA_TOPIC_PREFIX`, `KAFKA_SSL` and `KAFKA_SASL_*` cover shared clusters such as AMQ Streams.
+
+---
+
+## ☸️ Kubernetes & OpenShift Deployment
+
+The Helm chart in [`deploy/helm/api-monitor`](deploy/helm/api-monitor) runs the backend image as separate workloads: **API** (REST + SSE), a single-replica **scheduler**, the **Kafka log consumer**, the **dashboard**, and an optional **Fluent Bit** DaemonSet that ships container logs to Kafka.
+
+```bash
+# Self-contained (in-chart dev Postgres/Redis/Kafka), e.g. kind / k3s / minikube
+helm install api-monitor deploy/helm/api-monitor -n api-monitor --create-namespace
+
+# OpenShift / production: managed datastores, Route, 2 API replicas + dedicated scheduler
+helm install api-monitor deploy/helm/api-monitor -n api-monitor \
+  -f deploy/helm/api-monitor/values-openshift.yaml
+```
+
+- **Remediation RBAC** — with `remediation.enabled`, the API/scheduler ServiceAccount gets a Role in each of `remediation.targetNamespaces` allowing only `get`/`patch` on Deployments and their scale subresource. Anything else is denied by the cluster.
+- **Scaling** — `api.replicas > 1` requires `scheduler.separate: true` (the chart refuses otherwise) so health checks never run twice. Load-test streams live in the pod that started the run; OpenShift Routes are sticky by default.
+- **OpenShift security** — all app images run as non-root with arbitrary UIDs (frontend on 8080); pods drop all capabilities with a read-only root filesystem. The in-chart Postgres/Redis/Kafka use fixed UIDs and are for dev only.
+- **Fluent Bit** — needs hostPath `/var/log`; on OpenShift grant its ServiceAccount the privileged SCC. App logs without a host are attributed to `<app label>.<namespace>.svc`.
+
+**Smoke test** — `deploy/scripts/k3s-smoke-test.sh` builds the images, installs the chart on a throwaway k3s cluster in Docker (only Docker required) and verifies pods, single scheduler, the Fluent Bit → Kafka → discovery path, and remediation RBAC (allowed in the target namespace, 403 elsewhere). About 6 minutes.
+
+---
+
 ## 🧪 Running Tests
 
 The backend has an integration suite (`backend/test/`) built on Node's test runner. It covers incident detection, root-cause analysis, remediation (with a mock Kubernetes API), log discovery, load-test suites and the HTTP layer, against real Postgres and local stub services.
@@ -283,6 +333,10 @@ cd backend
 npm test                        # full suite (~40s)
 npm run test:unit               # parser/normalizer only, no database
 npm run typecheck:test          # type-check src + tests
+
+# Include the live Kafka tests (otherwise skipped)
+docker compose --profile kafka up -d kafka
+TEST_KAFKA_BROKERS=localhost:29092 npm test
 ```
 
 Tests use a separate database, `api_monitoring_test` by default (created automatically on the compose Postgres). Override it with `TEST_DATABASE_URL`. Every table in it is truncated between tests, so the suite refuses to run against a database whose name doesn't contain `test`. External integrations (ServiceNow, Kubernetes, Gemini) are disabled for the test run regardless of `backend/.env`.

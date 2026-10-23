@@ -1,0 +1,44 @@
+# OpenShift / production overrides:
+#   helm install api-monitor deploy/helm/api-monitor -n api-monitor \
+#     -f deploy/helm/api-monitor/values-openshift.yaml \
+#     --set image.backend.repository=image-registry.openshift-image-registry.svc:5000/api-monitor/backend \
+#     --set image.frontend.repository=image-registry.openshift-image-registry.svc:5000/api-monitor/frontend
+#
+# Assumes managed datastores (e.g. Crunchy Postgres, AMQ Streams) and a
+# pre-created Secret holding DATABASE_URL and credentials.
+
+api:
+  replicas: 2
+
+scheduler:
+  separate: true            # required with api.replicas > 1
+
+secrets:
+  existingSecret: api-monitor-secrets
+
+postgresql:
+  deploy: false
+
+redis:
+  deploy: false
+  url: ""                   # optional
+
+kafka:
+  deploy: false
+  brokers: my-cluster-kafka-bootstrap.kafka.svc:9093
+  ssl: true
+  saslMechanism: scram-sha-512
+  replicationFactor: 3
+  # SASL credentials come from existingSecret (KAFKA_SASL_USERNAME / _PASSWORD).
+
+remediation:
+  enabled: true
+  defaultNamespace: production-apps
+  targetNamespaces: [production-apps]
+
+route:
+  enabled: true
+
+# OpenShift's restricted-v2 SCC assigns the UID and seccomp profile itself.
+podSecurityContext:
+  runAsNonRoot: true

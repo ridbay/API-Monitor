@@ -53,3 +53,18 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.2
+      - run: helm lint deploy/helm/api-monitor
+      - run: helm lint deploy/helm/api-monitor -f deploy/helm/api-monitor/values-openshift.yaml --set secrets.existingSecret=ci
+      - name: Render and validate manifests
+        run: |
+          helm template ci deploy/helm/api-monitor > default.yaml
+          helm template ci deploy/helm/api-monitor -f deploy/helm/api-monitor/values-openshift.yaml --set secrets.existingSecret=ci > openshift.yaml
+          docker run --rm -v "$PWD":/m ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary -skip Route -kubernetes-version 1.30.0 /m/default.yaml /m/openshift.yaml

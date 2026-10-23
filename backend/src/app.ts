@@ -18,6 +18,7 @@ import { remediationRouter } from "./routes/remediation.routes";
 import { discoveryRouter } from "./routes/discovery.routes";
 import { loadSuiteRouter } from "./routes/loadSuite.routes";
 import { errorHandler } from "./middleware/errorHandler";
+import { pool } from "./config/db";
 
 dotenv.config();
 
@@ -26,7 +27,16 @@ app.use(cors());
 // Log batches posted as JSON to /api/discovery/ingest can run to megabytes.
 app.use(express.json({ limit: "20mb" }));
 
+// Liveness: the process is up. Readiness: it can also reach Postgres.
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/ready", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ ready: true });
+  } catch {
+    res.status(503).json({ ready: false });
+  }
+});
 
 app.use("/api/endpoints", endpointRouter);
 app.use("/api/monitor", monitorRouter);
