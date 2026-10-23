@@ -10,6 +10,7 @@ import { Topology } from "../pages/Topology";
 import { ExecutiveSummary } from "../pages/ExecutiveSummary";
 import { Incidents } from "../pages/Incidents";
 import { Discovery } from "../pages/Discovery";
+import { LoadTesting } from "../pages/LoadTesting";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "endpoints/new", element: <EndpointNew /> },
       { path: "endpoints/:id", element: <EndpointDetails /> },
       { path: "discovery", element: <Discovery /> },
+      { path: "load-testing", element: <LoadTesting /> },
       { path: "import", element: <Import /> },
       { path: "reports", element: <Reports /> },
     ],

@@ -30,6 +30,9 @@ import type {
   DiscoverySummary,
   LogIngestResult,
   IngestDefaults,
+  LoadSuite,
+  LoadRun,
+  SuiteInput,
 } from "../types";
 
 export const api = axios.create({ baseURL: "/api" });
@@ -110,6 +113,17 @@ export const tracerouteApi = {
 
 export const executiveApi = {
   getSummary: () => api.get<ExecutiveSummaryData>("/executive/summary").then((r) => r.data),
+};
+
+export const loadSuiteApi = {
+  listSuites: () => api.get<LoadSuite[]>("/load-suites/suites").then((r) => r.data),
+  createSuite: (input: SuiteInput) => api.post<LoadSuite>("/load-suites/suites", input).then((r) => r.data),
+  updateSuite: (id: number, input: SuiteInput) => api.put<LoadSuite>(`/load-suites/suites/${id}`, input).then((r) => r.data),
+  deleteSuite: (id: number) => api.delete(`/load-suites/suites/${id}`),
+  run: (id: number) => api.post<LoadRun>(`/load-suites/suites/${id}/run`).then((r) => r.data),
+  cancel: (runId: number) => api.post(`/load-suites/runs/${runId}/cancel`),
+  listRuns: () => api.get<LoadRun[]>("/load-suites/runs").then((r) => r.data),
+  streamUrl: (runId: number) => `/api/load-suites/runs/${runId}/stream`,
 };
 
 export const discoveryApi = {

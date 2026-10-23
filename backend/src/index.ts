@@ -16,6 +16,8 @@ import { executiveRouter } from "./routes/executive.routes";
 import { incidentRouter, notificationRouter } from "./routes/incident.routes";
 import { remediationRouter } from "./routes/remediation.routes";
 import { discoveryRouter } from "./routes/discovery.routes";
+import { loadSuiteRouter } from "./routes/loadSuite.routes";
+import { recoverInterruptedRuns } from "./services/loadSuite.service";
 import { errorHandler } from "./middleware/errorHandler";
 import { startScheduler } from "./cron/scheduler";
 import { connectRedis } from "./config/redis";
@@ -44,6 +46,7 @@ app.use("/api/incidents", incidentRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/remediation", remediationRouter);
 app.use("/api/discovery", discoveryRouter);
+app.use("/api/load-suites", loadSuiteRouter);
 
 app.use(errorHandler);
 
@@ -56,6 +59,7 @@ async function main() {
     console.warn("Redis connection failed — dashboard caching will be skipped:", err);
   }
 
+  await recoverInterruptedRuns().catch((err) => console.warn("Could not recover interrupted load test runs:", err));
   startScheduler();
 
   app.listen(PORT, () => {

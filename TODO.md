@@ -37,7 +37,7 @@ EXECUTIVE SUMMARY PAGE"
 
 | # | Feedback Directive | Deliverable Component | Priority | Status |
 |---|---|---|---|---|
-| **1** | Concurrent Bulk Performance Testing | Multi-endpoint load generator with configurable curves ($p50, p95, p99$) | High | 🟡 Partial (`loadTest.service.ts`) |
+| **1** | Concurrent Bulk Performance Testing | Multi-endpoint load generator with configurable curves ($p50, p95, p99$) | High | 🟢 Completed (single worker; distributed pending) |
 | **2** | Pods & Microservices Observability | Kubernetes API daemon watching pod states, restarts, OOMKilled, limits | High | ⚪ Pending cluster credentials |
 | **3** | Auto-Detect Endpoints & Pods from Logs | Access log harvesting engine parsing URIs, normalizer & auto-catalog | High | 🟢 Completed (HTTP/file ingest; Kafka source pending) |
 | **4** | Kafka Big Log Pipeline $\to$ PostgreSQL | Apache Kafka broker, consumer worker pool, partitioned PostgreSQL tables | High | ⚪ Planned (Phase 3) |
@@ -179,10 +179,12 @@ EXECUTIVE SUMMARY PAGE"
   - [x] Paste or upload logs; sample at `dev/sample-logs/access-log-sample.txt`
 
 #### 3.4 Multi-Endpoint Concurrent Performance Testing Suite
-- [ ] Expand `loadTest.service.ts` to support multi-endpoint scenario suites
-- [ ] Configurable test profiles: Concurrent users, ramp-up time, test duration, RPS limits
-- [ ] Real-time execution telemetry: Throughput graphs, error rate %, latency percentiles ($p50, p90, p95, p99$)
-- [ ] Dedicated worker pool to isolate load generation from core API monitoring
+- [x] Multi-endpoint scenario suites with traffic weights (`backend/src/services/loadSuite.service.ts`, `/api/load-suites`)
+- [x] Configurable test profiles: virtual users (≤200), ramp-up, duration (≤600s), optional RPS cap
+- [x] Real-time execution telemetry over SSE: per-second throughput, error rate %, latency percentiles ($p50, p90, p95, p99), active VUs; per-endpoint summary with status breakdown
+- [x] Dedicated worker thread (`backend/src/workers/loadWorker.ts`) isolates load generation from core API monitoring; one run at a time, cancellable, interrupted runs recovered on restart
+- [x] Load Testing console (`frontend/src/pages/LoadTesting.tsx`): suite builder, live charts, run history
+- [ ] Distributed load (multiple `perf-worker` pods) — single worker thread today
 
 ---
 

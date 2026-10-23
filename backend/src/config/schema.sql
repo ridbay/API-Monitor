@@ -203,3 +203,29 @@ CREATE TABLE IF NOT EXISTS log_ingest_batches (
   routes_new INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Phase 3: Multi-endpoint load test suites
+CREATE TABLE IF NOT EXISTS load_test_suites (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  endpoints JSONB NOT NULL,
+  profile JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS load_test_runs (
+  id SERIAL PRIMARY KEY,
+  suite_id INTEGER REFERENCES load_test_suites(id) ON DELETE SET NULL,
+  suite_name TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('RUNNING', 'COMPLETED', 'CANCELLED', 'FAILED')),
+  profile JSONB NOT NULL,
+  endpoints JSONB NOT NULL,
+  timeline JSONB NOT NULL DEFAULT '[]',
+  summary JSONB,
+  error TEXT,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  finished_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_load_test_runs_suite_id ON load_test_runs(suite_id, started_at DESC);
